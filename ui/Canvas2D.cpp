@@ -28,8 +28,13 @@
 
 Canvas2D::Canvas2D() :
     // @TODO: Initialize any pointers in this class here.
-    m_rayScene(nullptr)
+    m_rayScene(nullptr),
+    m_brushType(BRUSH_CONSTANT),
+    m_brushColor(RGBA()),
+    m_currentRadius(0),
+    m_brush(nullptr)
 {
+    settingsChanged();
 }
 
 Canvas2D::~Canvas2D()
@@ -51,6 +56,35 @@ void Canvas2D::paintEvent(QPaintEvent *e) {
 void Canvas2D::settingsChanged() {
     // TODO: Process changes to the application settings.
     std::cout << "Canvas2d::settingsChanged() called. Settings have changed" << std::endl;
+    int s_type = settings.brushType;
+    RGBA s_color = settings.brushColor;
+    int s_radius = settings.brushRadius;
+    if (s_type != m_brushType)
+        std::cout << "  BrushType has changed" << std::endl;
+    else if (s_radius != m_currentRadius)
+        std::cout << "  BrushRadius has changed" << std::endl;
+    else if ((s_color.r != m_brushColor.r) or
+             (s_color.g != m_brushColor.g) or
+             (s_color.b != m_brushColor.b) or
+             (s_color.a != m_brushColor.a))
+        std::cout << "  BrushColor has changed" << std::endl;
+    m_brushType = s_type;
+    m_brushColor = s_color;
+    m_currentRadius = s_radius;
+    switch(m_brushType) {
+    case BRUSH_CONSTANT:
+        m_brush = std::make_unique<ConstantBrush>(m_brushColor, m_currentRadius);
+        break;
+    case BRUSH_LINEAR:
+        m_brush = std::make_unique<LinearBrush>(m_brushColor, m_currentRadius);
+        break;
+    case BRUSH_QUADRATIC:
+        m_brush = std::make_unique<QuadraticBrush>(m_brushColor, m_currentRadius);
+        break;
+    case BRUSH_SMUDGE:
+        m_brush = std::make_unique<SmudgeBrush>(m_brushColor, m_currentRadius);
+        break;
+    }
 }
 
 // ********************************************************************************************
@@ -67,8 +101,7 @@ void Canvas2D::mouseDown(int x, int y) {
     // need to use the actual alpha value to compute the new color of the pixel
 
     std::cout << "Canvas2d::mouseDown() called" << std::endl;
-
-
+    m_brush->brushDown(x, y, this);
 //    bool fixAlphaBlending = settings.fixAlphaBlending; // for extra/half credit
 
 }
@@ -76,12 +109,14 @@ void Canvas2D::mouseDown(int x, int y) {
 void Canvas2D::mouseDragged(int x, int y) {
     // TODO: [BRUSH] Mouse interaction for Brush.
     std::cout << "Canvas2d::mouseDragged() called" << std::endl;
+    m_brush->brushDragged(x, y, this);
 
 }
 
 void Canvas2D::mouseUp(int x, int y) {
     // TODO: [BRUSH] Mouse interaction for Brush.
     std::cout << "Canvas2d::mouseUp() called" << std::endl;
+    m_brush->brushUp(x, y, this);
 }
 
 

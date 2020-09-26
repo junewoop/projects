@@ -16,8 +16,8 @@ VAO::VAO(const VBO &vbo, int numberOfVerticesToRender) :
 
     bind();
     vbo.bindAndEnable();
-    unbind();
     vbo.unbind();
+    unbind();
 }
 
 VAO::VAO(const VBO &vbo, const IBO &ibo, int numberOfVerticesToRender) :

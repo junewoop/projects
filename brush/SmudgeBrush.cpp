@@ -18,6 +18,7 @@ SmudgeBrush::SmudgeBrush(RGBA color, int radius) :
     //       need to store temporary image data in memory. Remember to use automatically managed memory!
 
     makeMask();
+    initializePaint();
 }
 
 
@@ -25,20 +26,6 @@ SmudgeBrush::~SmudgeBrush()
 {
     // @TODO: [BRUSH] Be sure not to leak memory!  If you're using automatic memory management everywhere,
     //       this will be empty.
-}
-
-void SmudgeBrush::brushUp(int x, int y, Canvas2D* canvas) {
-}
-
-
-//! create a mask with a distribution of your choice (probably want to use quadratic for best results)
-void SmudgeBrush::makeMask() {
-    // @TODO: [BRUSH] Set up the mask for your brush here. For this brush you will probably want
-    //        to use a quadratic distribution for the best results. Linear or Gaussian would
-    //        work too, however. Feel free to paste your code from the Linear or Quadratic brushes
-    //        or modify the class inheritance to be able to take advantage of one of those class's
-    //        existing implementations. The choice is yours!
-    //
 }
 
 void SmudgeBrush::brushDown(int x, int y, Canvas2D *canvas) {
@@ -55,7 +42,19 @@ void SmudgeBrush::pickUpPaint(int x, int y, Canvas2D* canvas) {
     //        buffer (which you'll also have to figure out where and how to allocate). Then,
     //        in the paintOnce() method, you'll paste down the paint that you picked up here.
     //
-
+    RGBA *pix = canvas->data();
+    int beginRow = std::max(0, y-m_radius);
+    int endRow = std::min(height, y+m_radius+1);
+    int beginCol = std::max(0, x-m_radius);
+    int endCol = std::min(width, x+m_radius+1);
+    int indCanvas;
+    int indBrush;
+    for (int i = beginRow; i < endRow; i++)
+        for (int j = beginCol; j < endCol; j++){
+            indCanvas = i*width+j;
+            indBrush = getIndex(i-y+m_radius, j-x+m_radius);
+            m_paint[indBrush] = pix[indCanvas];
+        }
 }
 
 void SmudgeBrush::brushDragged(int mouseX, int mouseY, Canvas2D* canvas) {
@@ -64,9 +63,36 @@ void SmudgeBrush::brushDragged(int mouseX, int mouseY, Canvas2D* canvas) {
     //        ignore the alpha parameter, but you can also use it (smartly) if you
     //        would like to.
 
+    RGBA *pix = canvas->data();
+    int width = canvas->width();
+    int height = canvas->height();
+    int beginRow = std::max(0, mouseY-m_radius);
+    int endRow = std::min(height, mouseY+m_radius+1);
+    int beginCol = std::max(0, mouseX-m_radius);
+    int endCol = std::min(width, mouseX+m_radius+1);
+    unsigned char r, g, b, a = 255;
+    int indCanvas;
+    int indBrush;
+    for (int i = beginRow; i < endRow; i++)
+        for (int j = beginCol; j < endCol; j++){
+            indCanvas = i*width+j;
+            indBrush = getIndex(i-mouseY+m_radius, j-mouseX+m_radius);
+            r = lerp(pix[indCanvas].r, m_paint[indBrush].r, m_mask[indBrush]);
+            g = lerp(pix[indCanvas].g, m_paint[indBrush].g, m_mask[indBrush]);
+            b = lerp(pix[indCanvas].b, m_paint[indBrush].b, m_mask[indBrush]);
+            pix[indCanvas] = RGBA(r, g, b, a);
+        }
+    canvas->update();
     // now pick up paint again...
     pickUpPaint(mouseX, mouseY, canvas);
 
+}
+
+void SmudgeBrush::initializePaint() {
+    m_paint.reserve(m_maskSize*m_maskSize);
+    for (int i = 0; i < m_maskSize; i++)
+        for (int j = 0; j < m_maskSize; j++)
+            m_paint[getIndex(i, j)] = RGBA();
 }
 
 

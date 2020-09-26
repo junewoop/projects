@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "SupportCanvas2D.h"
+#include "Brush.h"
 
 class RayScene;
 
@@ -55,7 +56,10 @@ private:
     std::unique_ptr<RayScene> m_rayScene;
 
     //TODO: [BRUSH, INTERSECT, RAY] Put your member variables here.
-
+    int m_brushType;
+    RGBA m_brushColor;
+    int m_currentRadius;
+    std::unique_ptr<Brush> m_brush;
 };
 
 #endif // CANVAS2D_H

@@ -4,6 +4,7 @@
 #include <SupportCanvas3D.h>
 #include <QFileDialog>
 #include <sstream>
+#include <iostream>
 
 #include "shapes/Cube.h"
 #include "shapes/Cone.h"

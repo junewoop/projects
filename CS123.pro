@@ -36,8 +36,15 @@ SOURCES += \
     scenegraph/ShapesScene.cpp \
     scenegraph/SceneviewScene.cpp \
     scenegraph/RayScene.cpp \
+    shapes/Barrel.cpp \
+    shapes/Cap.cpp \
+    shapes/Cone.cpp \
+    shapes/Cube.cpp \
+    shapes/Cylinder.cpp \
     shapes/ExampleShape.cpp \
     shapes/Shape.cpp \
+    shapes/Slant.cpp \
+    shapes/Sphere.cpp \
     ui/Canvas2D.cpp \
     ui/SupportCanvas2D.cpp \
     ui/SupportCanvas3D.cpp \
@@ -81,8 +88,15 @@ HEADERS += \
     scenegraph/ShapesScene.h \
     scenegraph/SceneviewScene.h \
     scenegraph/RayScene.h \
+    shapes/Barrel.h \
+    shapes/Cap.h \
+    shapes/Cone.h \
+    shapes/Cube.h \
+    shapes/Cylinder.h \
     shapes/ExampleShape.h \
     shapes/Shape.h \
+    shapes/Slant.h \
+    shapes/Sphere.h \
     ui/Canvas2D.h \
     ui/SupportCanvas2D.h \
     ui/SupportCanvas3D.h \

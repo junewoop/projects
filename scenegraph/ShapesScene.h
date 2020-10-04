@@ -68,11 +68,14 @@ private:
 
     glm::vec4 m_lightDirection = glm::normalize(glm::vec4(1.f, -1.f, -1.f, 0.f));
 
-    // essentially an OpenGLShape from lab 1
-    std::unique_ptr<Shape> m_shape;
-
     int m_width;
     int m_height;
+
+    // essentially an OpenGLShape from lab 1
+    std::unique_ptr<Shape> m_shape;
+    int m_currentShape;
+    int m_currentParameter1;
+    int m_currentParameter2;
 
     void clearLights();
     void loadPhongShader();

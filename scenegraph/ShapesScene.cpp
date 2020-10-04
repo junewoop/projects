@@ -3,9 +3,12 @@
 #include "shapes/Shape.h"
 #include <SupportCanvas3D.h>
 #include <QFileDialog>
-
 #include <sstream>
 
+#include "shapes/Cube.h"
+#include "shapes/Cone.h"
+#include "shapes/Sphere.h"
+#include "shapes/Cylinder.h"
 #include "shapes/ExampleShape.h"
 
 using namespace CS123::GL;
@@ -15,10 +18,14 @@ using namespace CS123::GL;
 #include "ResourceLoader.h"
 
 ShapesScene::ShapesScene(int width, int height) :
-    m_shape(nullptr),
     m_width(width),
-    m_height(height)
+    m_height(height),
+    m_shape(nullptr),
+    m_currentShape(-1),
+    m_currentParameter1(-1),
+    m_currentParameter2(-1)
 {
+    settingsChanged();
     initializeSceneMaterial();
     initializeSceneLight();
     loadPhongShader();
@@ -154,7 +161,6 @@ void ShapesScene::renderNormalsPass (SupportCanvas3D *context) {
 }
 
 void ShapesScene::renderGeometry() {
-    // TODO: [SHAPES] Render the shape. Lab 1 seems like it'll come in handy...
     if (m_shape) {
         m_shape->draw();
     }
@@ -179,7 +185,31 @@ void ShapesScene::setLights(const glm::mat4 viewMatrix) {
 }
 
 void ShapesScene::settingsChanged() {
-    // TODO: [SHAPES] Fill this in, for now default to an example shape
-    m_shape = std::make_unique<ExampleShape>(settings.shapeParameter1, settings.shapeParameter2);
+    if(m_currentShape != settings.shapeType) {
+        std::cout << "  shapeType changed" << std::endl;
+        m_currentShape = settings.shapeType;
+    }
+    else if (m_currentParameter1 != settings.shapeParameter1) {
+        std::cout << " shapeParameter1 changed" << std::endl;
+        m_currentParameter1 = settings.shapeParameter1;
+    }
+    else if (m_currentParameter2 != settings.shapeParameter2) {
+        std::cout << " shapeParameter2 changed" << std::endl;
+        m_currentParameter2 = settings.shapeParameter2;
+    }
+    switch(m_currentShape) {
+    case SHAPE_CUBE:
+        m_shape = std::make_unique<Cube>(m_currentParameter1);
+        break;
+    case SHAPE_CONE:
+        m_shape = std::make_unique<Cone>(m_currentParameter1, m_currentParameter2);
+        break;
+    case SHAPE_SPHERE:
+        m_shape = std::make_unique<Sphere>(m_currentParameter1, m_currentParameter2);
+        break;
+    case SHAPE_CYLINDER:
+        m_shape = std::make_unique<Cylinder>(m_currentParameter1, m_currentParameter2);
+        break;
+    }
 }
 

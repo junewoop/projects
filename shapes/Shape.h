@@ -4,6 +4,7 @@
 /** imports the OpenGL math library https://glm.g-truc.net/0.9.2/api/a00001.html */
 #include <glm/glm.hpp>
 #include "GL/glew.h"
+#include <cmath>
 
 #include<memory>
 #include <vector>
@@ -25,14 +26,16 @@ class Shape
 public:
     Shape();
     ~Shape();
-    void draw();
+    virtual void draw();
 
 protected:
     /** builds the VAO, pretty much the same as from lab 1 */
     void buildVAO();
 
     std::vector<GLfloat> m_vertexData;
+    //std::vector<GLfloat> m_vertextData_2;
     std::unique_ptr<CS123::GL::VAO> m_VAO;
+    //std::unique_ptr<CS123::GL::VAO> m_VAO_2;
 };
 
 #endif // SHAPE_H

@@ -29,13 +29,8 @@ class Shape
 {
 public:
     Shape();
-<<<<<<< HEAD
     ~Shape();
     virtual void draw();
-=======
-    virtual ~Shape();
-    void draw();
->>>>>>> upstream/master
 
 protected:
     /** builds the VAO, pretty much the same as from lab 1 */

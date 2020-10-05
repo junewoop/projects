@@ -19,4 +19,4 @@ Hence, I did not have to modify ShapesScene::renderGeometry().
 
 1. Acknowledgment
 
-I did not use insertVec3() method, but kept track of the position of the m_vertexData using the reference of the index variable ind which create_*_vertex_data() is updating.
+I did not use insertVec3() method, but kept track of the position of the m_vertexData that create_*_vertex_data() is updating using the reference to the int ind.

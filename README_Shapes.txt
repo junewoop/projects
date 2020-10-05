@@ -14,8 +14,10 @@ Shape::draw() which can be called to draw the shape that each class name describ
 
 Cone is a composition of one Cap and one Slant, and Cylinder is a composition of two Caps and one Barrel.
 
-Cone and Cylinder only overrides draw() which call draw() of their classes associated with the respective parts.
+Cone and Cylinder only overrides Shape::draw() which call all draw() of their classes associated with the respective parts.
 
-For instance, Cone::draw() calls m_cap->draw() and m_slant->draw().
+In other words, Cone::draw() calls m_cap->draw() and m_slant->draw(), and 
+
+Cylinder::draw() calls m_cap_top->draw(), m_cap_bottom->draw(), and m_barrel->draw().
 
 Hence, I did not have to modify ShapesScene::renderGeometry().

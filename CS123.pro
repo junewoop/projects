@@ -31,6 +31,12 @@ SOURCES += \
     camera/OrbitingCamera.cpp \
     camera/CamtransCamera.cpp \
     camera/QuaternionCamera.cpp \
+    filter/Filter.cpp \
+    filter/FilterBlur.cpp \
+    filter/FilterEdge.cpp \
+    filter/FilterGray.cpp \
+    filter/FilterScale.cpp \
+    filter/FilterUtils.cpp \
     scenegraph/Scene.cpp \
     scenegraph/OpenGLScene.cpp \
     scenegraph/ShapesScene.cpp \
@@ -83,6 +89,12 @@ HEADERS += \
     camera/OrbitingCamera.h \
     camera/CamtransCamera.h \
     camera/QuaternionCamera.h \
+    filter/Filter.h \
+    filter/FilterBlur.h \
+    filter/FilterEdge.h \
+    filter/FilterGray.h \
+    filter/FilterScale.h \
+    filter/FilterUtils.h \
     scenegraph/Scene.h \
     scenegraph/OpenGLScene.h \
     scenegraph/ShapesScene.h \

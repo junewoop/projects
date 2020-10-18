@@ -25,6 +25,9 @@
 #include "brush/LinearBrush.h"
 #include "brush/QuadraticBrush.h"
 #include "brush/SmudgeBrush.h"
+#include "filter/FilterBlur.h"
+#include "filter/FilterEdge.h"
+#include "filter/FilterScale.h"
 
 Canvas2D::Canvas2D() :
     // @TODO: Initialize any pointers in this class here.
@@ -32,7 +35,11 @@ Canvas2D::Canvas2D() :
     m_brushType(BRUSH_CONSTANT),
     m_brushColor(RGBA()),
     m_currentRadius(0),
-    m_brush(nullptr)
+    m_brush(nullptr),
+    m_p(0),
+    m_blurRadius(0),
+    m_scaleX(0.f),
+    m_scaleY(0.f)
 {
     settingsChanged();
 }
@@ -85,6 +92,10 @@ void Canvas2D::settingsChanged() {
         m_brush = std::make_unique<SmudgeBrush>(m_brushColor, m_currentRadius);
         break;
     }
+    m_p = settings.edgeDetectSensitivity;
+    m_blurRadius = settings.blurRadius;
+    m_scaleX = settings.scaleX;
+    m_scaleY = settings.scaleY;
 }
 
 // ********************************************************************************************
@@ -127,14 +138,22 @@ void Canvas2D::mouseUp(int x, int y) {
 
 void Canvas2D::filterImage() {
     // TODO: [FILTER] Filter the image. Some example code to get the filter type is provided below.
-
+    std::unique_ptr<Filter> filter;
     switch(settings.filterType) {
-        case FILTER_BLUR:
-            // ...
-            break;
-            // fill in the rest
+    case FILTER_BLUR:
+        filter = std::make_unique<FilterBlur>(m_blurRadius);
+        break;
+        // fill in the rest
+    case FILTER_EDGE_DETECT:
+        filter = std::make_unique<FilterEdge>(m_p);
+        // ...
+        break;
+    case FILTER_SCALE:
+        filter = std::make_unique<FilterScale>(m_scaleX, m_scaleY);
+        break;
     }
-
+    filter->apply(this);
+    this->update();
     // Leave this code here! This code ensures that the Canvas2D will be completely wiped before
     // drawing the new image.
     repaint(rect());

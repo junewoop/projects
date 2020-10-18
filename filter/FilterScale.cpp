@@ -49,6 +49,22 @@ void FilterScale::apply(Canvas2D *canvas){
     data = canvas->data();
 }
 
+float FilterScale::backmap(float scale, int j){
+        return j/scale + (1-scale)/scale;
+}
+
+float FilterScale::trianglefilter(float diff, float scale){
+    float radius;
+    if (scale < 1)
+        radius = 1.f/scale;
+    else
+        radius = 1.f;
+    if ((diff < -radius) || (diff > radius))
+        return 0;
+    else
+        return (1-fabs(diff)/radius)/radius;
+}
+
 void FilterScale::scale1D(int beginIndex, int old_beginIndex,
                               std::vector<float> &vec_r,std::vector<float> &vec_g, std::vector<float> &vec_b,
                               std::vector<float> &next_r, std::vector<float> &next_g, std::vector<float> &next_b,
@@ -114,3 +130,4 @@ void FilterScale::scale1D(int beginIndex, int old_beginIndex,
         next_b[ind] /= weight_sum;
     }
 }
+

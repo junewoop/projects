@@ -69,7 +69,6 @@ void FilterScale::scale1D(int beginIndex, int old_beginIndex,
                               std::vector<float> &vec_r,std::vector<float> &vec_g, std::vector<float> &vec_b,
                               std::vector<float> &next_r, std::vector<float> &next_g, std::vector<float> &next_b,
                               AxisType axis){
-    // initialization with respect to axis
     int step = 0;
     int old_step = 0;
     float scale = 0.f;
@@ -86,19 +85,15 @@ void FilterScale::scale1D(int beginIndex, int old_beginIndex,
         scale = m_scaleY;
         break;
     }
-
-    // begin applying filter
     int ind = 0;
     int begin, end;
     float r, g, b;
     float weight_sum = 0.f;
     for (int j = 0; j < step; j++){
-        // initialize pixels
         ind = shiftIndex(beginIndex, j, m_new_width, axis);
         next_r[ind] = 0.f;
         next_g[ind] = 0.f;
         next_b[ind] = 0.f;
-        // compute backmap and support range
         center = backmap(scale, j);
         if (scale < 1){
             begin = ceil(center - 1/scale);
@@ -108,7 +103,6 @@ void FilterScale::scale1D(int beginIndex, int old_beginIndex,
             begin = ceil(center - 1);
             end = ceil(center);
         }
-        // compute convolution
         weight_sum = 0.f;
         for(int k = begin; k <= end; k++){
             if (k < 0){
@@ -131,7 +125,6 @@ void FilterScale::scale1D(int beginIndex, int old_beginIndex,
             next_b[ind] += b * trianglefilter(k - center, scale);
             weight_sum += trianglefilter(k - center, scale);
         }
-        // normalize: divide by weight_sum
         next_r[ind] /= weight_sum;
         next_g[ind] /= weight_sum;
         next_b[ind] /= weight_sum;

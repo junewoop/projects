@@ -60,6 +60,11 @@ private:
     RGBA m_brushColor;
     int m_currentRadius;
     std::unique_ptr<Brush> m_brush;
+    // [FILTER]
+    float m_p;
+    int m_blurRadius;
+    float m_scaleX;
+    float m_scaleY;
 };
 
 #endif // CANVAS2D_H

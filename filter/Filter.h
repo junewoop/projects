@@ -38,6 +38,7 @@ class Filter {
 
 public:
     virtual ~Filter();
+
     // Applies this filter on the given region.
     //
     // The apply method is called by FilterCanvas to apply this filter
@@ -45,7 +46,6 @@ public:
     // redefine it each filter subclass.
     //
     virtual void apply(Canvas2D* canvas) = 0;
-
 protected:
     void loadImage(Canvas2D* canvas, std::vector<float> &vec_r, std::vector<float> &vec_g, std::vector<float> &vec_b);
     void saveImage(Canvas2D* canvas, std::vector<float> &vec_r, std::vector<float> &vec_g, std::vector<float> &vec_b);

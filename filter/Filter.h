@@ -5,11 +5,6 @@
 #include "RGBA.h"
 #include "Canvas2D.h"
 
-enum AxisType {
-    X_Axis,
-    Y_Axis
-};
-
 class Canvas2D;
 
 /**
@@ -25,15 +20,6 @@ inline unsigned char REAL2byte(float f) {
     return (i < 0) ? 0 : (i > 255) ? 255 : i;
 }
 
-inline int shiftIndex(int ind, int offset, int width, AxisType axis){
-    switch(axis){
-    case X_Axis:
-        return ind + offset;
-    case Y_Axis:
-        return ind + offset * width;
-    }
-}
-
 class Filter {
 
 public:
@@ -46,9 +32,6 @@ public:
     // redefine it each filter subclass.
     //
     virtual void apply(Canvas2D* canvas) = 0;
-protected:
-    void loadImage(Canvas2D* canvas, std::vector<float> &vec_r, std::vector<float> &vec_g, std::vector<float> &vec_b);
-    void saveImage(Canvas2D* canvas, std::vector<float> &vec_r, std::vector<float> &vec_g, std::vector<float> &vec_b);
 };
 
 #endif

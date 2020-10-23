@@ -10,55 +10,51 @@ FilterEdge::~FilterEdge()
 }
 
 void FilterEdge::apply(Canvas2D *canvas){
-    // apply Grayscale
     FilterGray::apply(canvas);
-
-    // load image
-    std::vector<float> vec_gray, tmp_g_x, tmp_g_y;
-    loadImage(canvas, vec_gray, tmp_g_x, tmp_g_y);
-
-    // apply horizontal 1D kernel
+    int width = canvas->width(),height = canvas->height();
+    RGBA* data = canvas->data();
+    std::vector<int> G_x_int;
+    std::vector<int> G_y_int;
     int ind = 0;
-    for (int r = 0; r < m_height; r++){
-        for (int c = 0; c < m_width; c++){
+    float g_x, g_y;
+    G_x_int.resize(width*height);
+    G_y_int.resize(width*height);
+    for (int r = 0; r < height; r++){
+        for (int c = 0; c < width; c++){
             if(c == 0){
-                tmp_g_x[ind] = -vec_gray[ind] + vec_gray[ind + 1];
-                tmp_g_y[ind] = 2* vec_gray[ind] + vec_gray[ind + 1];
+                G_x_int[ind] = -data[ind].r + data[ind + 1].r;
+                G_y_int[ind] = 2* data[ind].r + data[ind + 1].r;
             }
-            else if (c == m_width - 1){
-                tmp_g_x[ind] = -vec_gray[ind-1] + vec_gray[ind];
-                tmp_g_y[ind] = vec_gray[ind-1] + 2*vec_gray[ind];
+            else if (c == width - 1){
+                G_x_int[ind] = -data[ind-1].r + data[ind].r;
+                G_y_int[ind] = data[ind-1].r + 2*data[ind].r;
             }
             else{
-                tmp_g_x[ind] = -vec_gray[ind-1] + vec_gray[ind+1];
-                tmp_g_y[ind] = vec_gray[ind-1] + 2*vec_gray[ind] + vec_gray[ind + 1];
+                G_x_int[ind] = -data[ind-1].r + data[ind+1].r;
+                G_y_int[ind] = data[ind-1].r + 2*data[ind].r + data[ind + 1].r;
             }
             ind++;
         }
     }
-
-    // apply vertical 1D kernel
     ind = 0;
-    float g_x = 0.f, g_y = 0.f;
-    for (int r = 0; r < m_height; r++){
-        for(int c = 0; c < m_width; c++){
+    for (int r = 0; r < height; r++){
+        for(int c = 0; c < width; c++){
             if(r == 0){
-                g_x = 2*tmp_g_x[ind] + tmp_g_x[ind+m_width];
-                g_y = tmp_g_y[ind] - tmp_g_y[ind+m_width];
+                g_x = 2*G_x_int[ind] + G_x_int[ind+width];
+                g_y = G_y_int[ind] - G_y_int[ind+width];
             }
-            else if (r == m_height - 1){
-                g_x = tmp_g_x[ind-m_width] + 2*tmp_g_x[ind];
-                g_y = -tmp_g_y[ind-m_width] + tmp_g_y[ind];
+            else if (r == height - 1){
+                g_x = G_x_int[ind-width] + 2*G_x_int[ind];
+                g_y = -G_y_int[ind-width] + G_y_int[ind];
             }
             else{
-                g_x = tmp_g_x[ind-m_width] + 2*tmp_g_x[ind] + tmp_g_x[ind + m_width];
-                g_y = -tmp_g_y[ind-m_width] + tmp_g_y[ind+m_width];
+                g_x = G_x_int[ind-width] + 2*G_x_int[ind] + G_x_int[ind + width];
+                g_y = -G_y_int[ind-width] + G_y_int[ind+width];
             }
-            vec_gray[ind] = sqrtf(g_x*g_x+g_y*g_y)*m_p;
+            data[ind].r = REAL2byte(sqrtf(g_x*g_x+g_y*g_y)/255.f*m_p);
+            data[ind].g = REAL2byte(sqrtf(g_x*g_x+g_y*g_y)/255.f*m_p);
+            data[ind].b = REAL2byte(sqrtf(g_x*g_x+g_y*g_y)/255.f*m_p);
             ind++;
         }
     }
-
-    // save image
-    saveImage(canvas, vec_gray, vec_gray, vec_gray);
 }

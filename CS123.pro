@@ -36,6 +36,7 @@ SOURCES += \
     filter/FilterEdge.cpp \
     filter/FilterGray.cpp \
     filter/FilterScale.cpp \
+    filter/FilterUtils.cpp \
     scenegraph/Scene.cpp \
     scenegraph/OpenGLScene.cpp \
     scenegraph/ShapesScene.cpp \
@@ -93,6 +94,7 @@ HEADERS += \
     filter/FilterEdge.h \
     filter/FilterGray.h \
     filter/FilterScale.h \
+    filter/FilterUtils.h \
     scenegraph/Scene.h \
     scenegraph/OpenGLScene.h \
     scenegraph/ShapesScene.h \

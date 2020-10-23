@@ -5,9 +5,9 @@
 class FilterBlur : public Filter {
 public:
     FilterBlur(int blurRadius);
-    virtual ~FilterBlur() override;
+    ~FilterBlur() override;
+    void apply(Canvas2D *canvas) override;
 
-    virtual void apply(Canvas2D *canvas) override;
 private:
     void blur1D(int beginIndex, std::vector<float> &vec_r,std::vector<float> &vec_g, std::vector<float> &vec_b,
                 std::vector<float> &next_r, std::vector<float> &next_g, std::vector<float> &next_b, AxisType axis);

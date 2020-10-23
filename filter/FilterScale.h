@@ -2,11 +2,6 @@
 #define FILTERSCALE_H
 #include "Filter.h"
 
-enum AxisType {
-    X_Axis,
-    Y_Axis
-};
-
 inline float backmap(float scale, int j){
         return j/scale + (1-scale)/scale;
 }
@@ -30,11 +25,8 @@ public:
 
     virtual void apply(Canvas2D *canvas) override;
 private:
-    void scaleUp1D(int beginIndex, int old_beginIndex, std::vector<float> &vec_r, std::vector<float> &vec_g, std::vector<float> &vec_b,
-                   std::vector<float> &next_r, std::vector<float> &next_g, std::vector<float> &next_b, AxisType axis);
     void scale1D(int beginIndex, int old_beginIndex, std::vector<float> &vec_r,std::vector<float> &vec_g, std::vector<float> &vec_b,
                      std::vector<float> &next_r, std::vector<float> &next_g, std::vector<float> &next_b, AxisType axis);
-    int shiftIndex(int ind, int offset, int delta, AxisType axis);
     float m_scaleX;
     float m_scaleY;
     int m_old_width;

@@ -75,7 +75,7 @@ void FilterBlur::blur1D(int beginIndex,
         }
     }
 
-    // compute the rest of the pixels
+    // compute the rest of the pixels in O(1) time for each pixel
     int prev_ind, tmp_ind;
     for (int j = 1; j < num_step; j++){
         prev_ind = shiftIndex(beginIndex, j-1, m_width, axis);

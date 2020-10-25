@@ -41,15 +41,6 @@ public:
     // Returns the current 'up' vector for this camera (the 'V' vector).
     glm::vec4 getUp() const;
 
-    // Returns the current 'U' vector for this camera
-    glm::vec4 getU() const;
-
-    // Returns the current 'V' vector for this camera
-    glm::vec4 getV() const;
-
-    // Returns the current 'W' vector for this camera
-    glm::vec4 getW() const;
-
     // Returns the currently set aspect ratio.
     float getAspectRatio() const;
 
@@ -77,21 +68,7 @@ public:
 
     // Sets the near and far clip planes for this camera.
     void setClip(float nearPlane, float farPlane);
-private:
-    float m_aspectRatio;
-    float m_near, m_far;
-    glm::mat4 m_translationMatrix, m_perspectiveTransformation;
-    glm::mat4 m_scaleMatrix, m_rotationMatrix;
-    float m_thetaH;
-    glm::vec4 m_eye, m_up;
-    glm::vec4 m_u, m_v, m_w;
 
-    void updateProjectionMatrix();
-    void updatePerspectivematrix();
-    void updateScaleMatrix();
-    void updateViewMatrix();
-    void updateRotationMatrix();
-    void updateTranslationMatrix();
 };
 
 #endif // CAMTRANSCAMERA_H

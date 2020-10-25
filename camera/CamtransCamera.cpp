@@ -24,7 +24,7 @@ CamtransCamera::CamtransCamera() :
     m_w(glm::vec4())
 {
     setClip(1.f, 30.f);
-    setHeightAngle(glm::radians(60.f));
+    setHeightAngle(60.f);
     setAspectRatio(1.f);
     orientLook(glm::vec4(2.f, 2.f, 2.f, 0.f),
                glm::vec4(-2.f, -2.f, -2.f, 0.f),
@@ -95,7 +95,7 @@ void CamtransCamera::orientLook(const glm::vec4 &eye, const glm::vec4 &look, con
 }
 
 void CamtransCamera::setHeightAngle(float h) {
-    m_thetaH = h;
+    m_thetaH = glm::radians(h);
     updateProjectionMatrix();
 }
 

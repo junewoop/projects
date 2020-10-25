@@ -23,7 +23,8 @@ CamtransCamera::CamtransCamera() :
     m_v(glm::vec4()),
     m_w(glm::vec4())
 {
-    setClip(1.f, 30.f);
+    // @TODO: [CAMTRANS] Fill this in...
+    setClip(1, 30);
     setHeightAngle(glm::radians(60.f));
     setAspectRatio(1.f);
     orientLook(glm::vec4(2, 2, 2, 0),
@@ -31,12 +32,16 @@ CamtransCamera::CamtransCamera() :
                glm::vec4(0, 1, 0, 0));
 }
 
-void CamtransCamera::setAspectRatio(float a) {
+void CamtransCamera::setAspectRatio(float a)
+{
+    // @TODO: [CAMTRANS] Fill this in...
+    // Question
     m_aspectRatio = a;
     updateProjectionMatrix();
 }
 
 glm::mat4x4 CamtransCamera::getProjectionMatrix() const {
+    // @TODO: [CAMTRANS] Fill this in...
     return m_perspectiveTransformation*m_scaleMatrix;
 }
 
@@ -111,7 +116,6 @@ void CamtransCamera::rotateU(float degrees) {
     glm::vec4 tmp = cos(rad)*m_v + sin(rad)*m_w;
     m_w = -sin(rad)*m_v + cos(rad)*m_w;
     m_v = tmp;
-    updateViewMatrix();
 }
 
 void CamtransCamera::rotateV(float degrees) {
@@ -119,7 +123,6 @@ void CamtransCamera::rotateV(float degrees) {
     glm::vec4 tmp = cos(rad)*m_w + sin(rad)*m_u;
     m_u = -sin(rad)*m_w + cos(rad)*m_u;
     m_w = tmp;
-    updateViewMatrix();
 }
 
 void CamtransCamera::rotateW(float degrees) {
@@ -127,7 +130,6 @@ void CamtransCamera::rotateW(float degrees) {
     glm::vec4 tmp = cos(rad)*m_u + sin(rad)*m_v;
     m_v = -sin(rad)*m_u + cos(rad)*m_v;
     m_u = tmp;
-    updateViewMatrix();
 }
 
 void CamtransCamera::setClip(float nearPlane, float farPlane) {

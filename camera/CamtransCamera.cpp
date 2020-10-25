@@ -26,9 +26,9 @@ CamtransCamera::CamtransCamera() :
     setClip(1.f, 30.f);
     setHeightAngle(glm::radians(60.f));
     setAspectRatio(1.f);
-    orientLook(glm::vec4(2.f, 2.f, 2.f, 0.f),
-               glm::vec4(-2.f, -2.f, -2.f, 0.f),
-               glm::vec4(0.f, 1.f, 0.f, 0.f));
+    orientLook(glm::vec4(2, 2, 2, 0),
+               glm::vec4(-2, -2, -2, 0),
+               glm::vec4(0, 1, 0, 0));
 }
 
 void CamtransCamera::setAspectRatio(float a) {
@@ -85,10 +85,12 @@ float CamtransCamera::getHeightAngle() const {
 }
 
 void CamtransCamera::orientLook(const glm::vec4 &eye, const glm::vec4 &look, const glm::vec4 &up) {
+    // @TODO: [CAMTRANS] Fill this in...
     m_eye = eye;
     m_up = up;
     m_w = glm::normalize(-look);
     m_v = glm::normalize(up-glm::dot(m_up, m_w)*m_w);
+    // Question!
     m_u = glm::vec4(glm::cross(glm::vec3(m_v.xyz()), glm::vec3(m_w.xyz())), 0);
     updateViewMatrix();
     updateProjectionMatrix();

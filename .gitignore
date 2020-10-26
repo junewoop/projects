@@ -16,3 +16,4 @@ qrc_resources.cpp
 *.mak
 
 *.plist
+data/

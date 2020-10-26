@@ -118,14 +118,12 @@ void Canvas2D::mouseDown(int x, int y) {
 }
 
 void Canvas2D::mouseDragged(int x, int y) {
-    // TODO: [BRUSH] Mouse interaction for Brush.
     std::cout << "Canvas2d::mouseDragged() called" << std::endl;
     m_brush->brushDragged(x, y, this);
 
 }
 
 void Canvas2D::mouseUp(int x, int y) {
-    // TODO: [BRUSH] Mouse interaction for Brush.
     std::cout << "Canvas2d::mouseUp() called" << std::endl;
     m_brush->brushUp(x, y, this);
 }

@@ -34,6 +34,15 @@ protected:
     // Sets the global data for the scene.
     virtual void setGlobal(const CS123SceneGlobalData &global);
 
+    virtual void addPrimitiveDFS(CS123SceneNode *curNode, const glm::mat4x4 &matrix);
+
+    int m_numLights;
+    int m_lightIndex;
+    int m_shapeIndex;
+    std::vector<const CS123SceneLightData*> m_lightData;
+    CS123SceneGlobalData m_global;
+    std::vector<const CS123ScenePrimitive*> m_primitive;
+    std::vector<const glm::mat4x4*> m_transformation;
 };
 
 #endif // SCENE_H

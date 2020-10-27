@@ -24,7 +24,6 @@ public:
     static void parse(Scene *sceneToFill, CS123ISceneParser *parser);
 
 protected:
-
     // Adds a primitive to the scene.
     virtual void addPrimitive(const CS123ScenePrimitive &scenePrimitive, const glm::mat4x4 &matrix);
 
@@ -34,15 +33,16 @@ protected:
     // Sets the global data for the scene.
     virtual void setGlobal(const CS123SceneGlobalData &global);
 
+    // Adds all primitive objects for the scene.
     virtual void addPrimitiveDFS(CS123SceneNode *curNode, const glm::mat4x4 &matrix);
 
     int m_numLights;
-    int m_lightIndex;
-    int m_shapeIndex;
-    std::vector<const CS123SceneLightData*> m_lightData;
+    int m_numPrims;
     CS123SceneGlobalData m_global;
-    std::vector<const CS123ScenePrimitive*> m_primitive;
-    std::vector<const glm::mat4x4*> m_transformation;
+    std::vector<std::unique_ptr<CS123SceneLightData>> m_lightData;
+    std::vector<std::unique_ptr<CS123SceneMaterial>> m_materials;
+    std::vector<PrimitiveType> m_types;
+    std::vector<std::unique_ptr<glm::mat4x4>> m_transformations;
 };
 
 #endif // SCENE_H

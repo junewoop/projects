@@ -6,12 +6,6 @@
 #include <sstream>
 #include <iostream>
 
-#include "shapes/Cube.h"
-#include "shapes/Cone.h"
-#include "shapes/Sphere.h"
-#include "shapes/Cylinder.h"
-#include "shapes/ExampleShape.h"
-
 using namespace CS123::GL;
 #include "gl/shaders/CS123Shader.h"
 #include "gl/shaders/Shader.h"
@@ -33,9 +27,6 @@ ShapesScene::ShapesScene(int width, int height) :
     loadWireframeShader();
     loadNormalsShader();
     loadNormalsArrowShader();
-
-    //TODO: [SHAPES] Allocate any additional memory you need...
-
 }
 
 ShapesScene::~ShapesScene()

@@ -10,6 +10,7 @@ public:
     Cylinder();
     Cylinder(int param1, int param2);
     ~Cylinder();
+    void draw() override;
 
 private:
     int m_param1;
@@ -17,7 +18,6 @@ private:
     std::unique_ptr<Barrel> m_barrel;
     std::unique_ptr<Cap> m_cap_top;
     std::unique_ptr<Cap> m_cap_bottom;
-    void draw() override;
 };
 
 #endif // CYLINDER_H

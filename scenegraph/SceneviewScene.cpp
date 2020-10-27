@@ -2,21 +2,25 @@
 #include "GL/glew.h"
 #include <QGLWidget>
 #include "Camera.h"
-
 #include "Settings.h"
 #include "SupportCanvas3D.h"
 #include "ResourceLoader.h"
 #include "gl/shaders/CS123Shader.h"
 using namespace CS123::GL;
 
-
-SceneviewScene::SceneviewScene()
+SceneviewScene::SceneviewScene() :
+    m_cube(nullptr),
+    m_cone(nullptr),
+    m_cylinder(nullptr),
+    m_sphere(nullptr),
+    m_p1(5),
+    m_p2(5)
 {
-    // TODO: [SCENEVIEW] Set up anything you need for your Sceneview scene here...
     loadPhongShader();
     loadWireframeShader();
     loadNormalsShader();
     loadNormalsArrowShader();
+    settingsChanged();
 }
 
 SceneviewScene::~SceneviewScene()
@@ -52,7 +56,6 @@ void SceneviewScene::loadNormalsArrowShader() {
 void SceneviewScene::render(SupportCanvas3D *context) {
     setClearColor();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     m_phongShader->bind();
     setSceneUniforms(context);
     setLights();
@@ -75,28 +78,45 @@ void SceneviewScene::setMatrixUniforms(Shader *shader, SupportCanvas3D *context)
     shader->setUniform("v", context->getCamera()->getViewMatrix());
 }
 
-void SceneviewScene::setLights()
-{
-    // TODO: [SCENEVIEW] Fill this in...
-    //
+void SceneviewScene::setLights(){
     // Set up the lighting for your scene using m_phongShader.
-    // The lighting information will most likely be stored in CS123SceneLightData structures.
-    //
+    for(int i = 0; i < m_numLights; i++)
+        m_phongShader->setLight(*m_lightData[i]);
 }
 
 void SceneviewScene::renderGeometry() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    // TODO: [SCENEVIEW] Fill this in...
-    // You shouldn't need to write *any* OpenGL in this class!
-    //
-    //
-    // This is where you should render the geometry of the scene. Use what you
-    // know about OpenGL and leverage your Shapes classes to get the job done.
-    //
-
+    for(int i = 0; i < m_numPrims; i++){
+        m_phongShader->setUniform("m", *m_transformations[i]);
+        m_phongShader->applyMaterial(*m_materials[i]);
+        switch (m_types[i]) {
+        case PrimitiveType::PRIMITIVE_CONE:
+            m_cone->draw();
+            break;
+        case PrimitiveType::PRIMITIVE_CUBE:
+            m_cube->draw();
+            break;
+        case PrimitiveType::PRIMITIVE_CYLINDER:
+            m_cylinder->draw();
+            break;
+        case PrimitiveType::PRIMITIVE_SPHERE:
+            m_sphere->draw();
+            break;
+        case PrimitiveType::PRIMITIVE_TORUS:
+            break;
+        case PrimitiveType::PRIMITIVE_MESH:
+            break;
+        }
+   }
 }
 
 void SceneviewScene::settingsChanged() {
-    // TODO: [SCENEVIEW] Fill this in if applicable.
+    m_p1 = settings.shapeParameter1;
+    m_p2 = settings.shapeParameter2;
+    int p1 = std::max(m_p1, 10);
+    int p2 = std::max(m_p2, 10);
+    m_cube = std::make_unique<Cube>(p1);
+    m_cone = std::make_unique<Cone>(p1, p2);
+    m_cylinder = std::make_unique<Cylinder>(p1, p2);
+    m_sphere = std::make_unique<Sphere>(p1, p2);
 }
-

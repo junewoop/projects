@@ -9,6 +9,11 @@
 
 #include "gl/datatype/FBO.h"
 #include "Settings.h"
+#include "shapes/Cube.h"
+#include "shapes/Cone.h"
+#include "shapes/Sphere.h"
+#include "shapes/Cylinder.h"
+#include "shapes/ExampleShape.h"
 
 namespace CS123 { namespace GL {
 

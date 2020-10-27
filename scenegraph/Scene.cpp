@@ -1,14 +1,11 @@
 #include "Scene.h"
 #include "Camera.h"
 #include "CS123ISceneParser.h"
-
 #include "glm/gtx/transform.hpp"
-#include <iostream>
 
 Scene::Scene() :
     m_numLights(0),
-    m_lightIndex(0),
-    m_shapeIndex(0),
+    m_numPrims(0),
     m_global({0.f, 0.f, 0.f, 0.f})
 {
 }
@@ -32,34 +29,47 @@ Scene::~Scene()
 }
 
 void Scene::parse(Scene *sceneToFill, CS123ISceneParser *parser) {
-    // TODO: load scene into sceneToFill using setGlobal(), addLight(), addPrimitive(), and
-    //   finishParsing()
+    // store global data from parser
     CS123SceneGlobalData tmp_global;
     parser->getGlobalData(tmp_global);
     sceneToFill->setGlobal(tmp_global);
 
+    // store light data from parser
     CS123SceneLightData tmp_light;
     sceneToFill->m_numLights = parser->getNumLights();
-    sceneToFill->m_lightData.resize(0);
-    sceneToFill->m_lightIndex = 0;
-    for (int i = 0; i < sceneToFill->m_numLights; i++){
-        if (parser->getLightData(i, tmp_light)){
+    sceneToFill->m_lightData.reserve(sceneToFill->m_numLights);
+    for (int i = 0; i < sceneToFill->m_numLights; i++)
+        if (parser->getLightData(i, tmp_light))
             sceneToFill->addLight(tmp_light);
-            sceneToFill->m_lightIndex++;
-        }
-    }
 
+    // store object data from parser
     CS123SceneNode *curNode = parser->getRootNode();
+    sceneToFill->m_numPrims = 0;
     glm::mat4x4 curMat = glm::mat4(1.f);
-    sceneToFill->m_shapeIndex = 0;
-    sceneToFill->m_primitive.resize(0);
-    sceneToFill->m_transformation.resize(0);
     sceneToFill->addPrimitiveDFS(curNode, curMat);
 }
 
 void Scene::addPrimitive(const CS123ScenePrimitive &scenePrimitive, const glm::mat4x4 &matrix) {
-    m_primitive.push_back(&scenePrimitive);
-    m_transformation.push_back(&matrix);
+    // add material data
+    std::unique_ptr<CS123SceneMaterial> tmp_material = std::make_unique<CS123SceneMaterial>();
+    *tmp_material = scenePrimitive.material;
+    tmp_material->cAmbient.r *= m_global.ka;
+    tmp_material->cAmbient.g *= m_global.ka;
+    tmp_material->cAmbient.b *= m_global.ka;
+    tmp_material->cDiffuse.r *= m_global.kd;
+    tmp_material->cDiffuse.g *= m_global.kd;
+    tmp_material->cDiffuse.b *= m_global.kd;
+    m_materials.push_back(std::move(tmp_material));
+
+    // add type data
+    m_types.push_back(scenePrimitive.type);
+
+    // add transformation data
+    std::unique_ptr<glm::mat4x4> tmp_mat = std::make_unique<glm::mat4x4>();
+    *tmp_mat = matrix;
+    m_transformations.push_back(std::move(tmp_mat));
+
+    m_numPrims++;
 }
 
 void Scene::addPrimitiveDFS(CS123SceneNode *curNode, const glm::mat4x4 &curMat){
@@ -84,10 +94,12 @@ void Scene::addPrimitiveDFS(CS123SceneNode *curNode, const glm::mat4x4 &curMat){
             tmp_mat = tmp_mat * curTrans->matrix;
         }
     }
+
     // add all primitives
     int numPrims = curNode->primitives.size();
     for (int i = 0; i < numPrims; i ++)
         addPrimitive(*curNode->primitives[i], tmp_mat);
+
     // recursive call on children
     int numChild = curNode->children.size();
     for (int i = 0; i < numChild; i++)
@@ -95,10 +107,11 @@ void Scene::addPrimitiveDFS(CS123SceneNode *curNode, const glm::mat4x4 &curMat){
 }
 
 void Scene::addLight(const CS123SceneLightData &sceneLight) {
-    m_lightData.push_back(&sceneLight);
+    std::unique_ptr<CS123SceneLightData> tmp_light = std::make_unique<CS123SceneLightData>();
+    *tmp_light = sceneLight;
+    m_lightData.push_back(std::move(tmp_light));
 }
 
 void Scene::setGlobal(const CS123SceneGlobalData &global) {
     m_global = global;
-    // std::cout << m_global.ka<< m_global.kd<< m_global.ks<< m_global.kt << std::endl;
 }

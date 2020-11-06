@@ -391,7 +391,8 @@ void MainWindow::renderImage() {
     OpenGLScene *glScene = m_canvas3D->getScene();
     if (glScene) {
         // TODO: Set up RayScene from glScene and call ui->canvas2D->setScene()
-
+        RayScene *ray_scene = new RayScene(*glScene);
+        ui->canvas2D->setScene(ray_scene);
         // Disable the UI so the user can't interfere with the raytracing
         setAllEnabled(false);
 

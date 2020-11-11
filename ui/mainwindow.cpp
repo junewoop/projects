@@ -382,13 +382,17 @@ void MainWindow::filterImage() {
 void MainWindow::renderImage() {
     // Make sure OpenGL gets a chance to update the OrbitCamera, which can only be done when
     // that tab is active (because it needs the OpenGL context for its matrix transforms)
+    printf("MainWindow::renderImage()\n");
     ui->tabWidget->setCurrentIndex(TAB_3D);
+    printf("2\n");
     m_canvas3D->update();
+    printf("3\n");
     QApplication::processEvents();
-
+    printf("4\n");
     ui->tabWidget->setCurrentIndex(TAB_2D);
-
+    printf("5\n");
     OpenGLScene *glScene = m_canvas3D->getScene();
+    printf("getScene\n");
     if (glScene) {
         // TODO: Set up RayScene from glScene and call ui->canvas2D->setScene()
         RayScene *ray_scene = new RayScene(*glScene);
@@ -404,13 +408,16 @@ void MainWindow::renderImage() {
         QSize activeTabSize = ui->tabWidget->currentWidget()->size();
         ui->canvas2D->renderImage(m_canvas3D->getCamera(), activeTabSize.width(), activeTabSize.height());
 
+
         // Swap the "stop rendering" button for the "render" button
         ui->rayRenderButton->setHidden(false);
         ui->rayStopRenderingButton->setHidden(true);
 
         // Enable the UI again
         setAllEnabled(true);
+        QApplication::processEvents();
     }
+    printf("Mainwindow: end\n");
 }
 
 void MainWindow::setAllEnabled(bool enabled) {

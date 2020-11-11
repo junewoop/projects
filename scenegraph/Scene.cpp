@@ -20,7 +20,16 @@ Scene::Scene(Scene &scene)
     // TODO [INTERSECT]
     // Make sure to copy over the lights and the scenegraph from the old scene,
     // as well as any other member variables your new scene will need.
-
+    m_numLights = scene.m_numLights;
+    m_numPrims = scene.m_numPrims;
+    m_global = scene.m_global;
+    for (int i = 0; i < m_numLights; i++)
+        m_lightData.push_back(std::move(scene.m_lightData[i]));
+    for (int i = 0; i < m_numPrims; i++){
+        m_materials.push_back(std::move(scene.m_materials[i]));
+        m_types.push_back(scene.m_types[i]);
+        m_transformations.push_back(std::move(scene.m_transformations[i]));
+    }
 }
 
 Scene::~Scene()

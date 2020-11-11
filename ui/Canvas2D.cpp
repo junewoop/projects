@@ -61,7 +61,6 @@ void Canvas2D::paintEvent(QPaintEvent *e) {
 }
 
 void Canvas2D::settingsChanged() {
-    // TODO: Process changes to the application settings.
     std::cout << "Canvas2d::settingsChanged() called. Settings have changed" << std::endl;
     int s_type = settings.brushType;
     RGBA s_color = settings.brushColor;
@@ -135,16 +134,13 @@ void Canvas2D::mouseUp(int x, int y) {
 // ********************************************************************************************
 
 void Canvas2D::filterImage() {
-    // TODO: [FILTER] Filter the image. Some example code to get the filter type is provided below.
     std::unique_ptr<Filter> filter;
     switch(settings.filterType) {
     case FILTER_BLUR:
         filter = std::make_unique<FilterBlur>(m_blurRadius);
         break;
-        // fill in the rest
     case FILTER_EDGE_DETECT:
         filter = std::make_unique<FilterEdge>(m_p);
-        // ...
         break;
     case FILTER_SCALE:
         filter = std::make_unique<FilterScale>(m_scaleX, m_scaleY);
@@ -167,13 +163,14 @@ void Canvas2D::setScene(RayScene *scene) {
 }
 
 void Canvas2D::renderImage(Camera *camera, int width, int height) {
+    resize(width, height);
     if (m_rayScene) {
         // @TODO: raytrace the scene based on settings
         //        YOU MUST FILL THIS IN FOR INTERSECT/RAY
 
         // If you want the interface to stay responsive, make sure to call
         // QCoreApplication::processEvents() periodically during the rendering.
-
+        m_rayScene->draw(this, camera);
     }
 }
 

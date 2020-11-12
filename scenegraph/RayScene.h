@@ -24,21 +24,22 @@ public:
     virtual ~RayScene();
     void draw(Canvas2D *canvas, Camera *camera);
 protected:
-    ray createRay(int x, int y);
     void setCanvas(Canvas2D *canvas);
     void setCamera(Camera *camera);
-    void intersect(ray one_ray, RGBA *data);
-    float intersectAt(ray one_ray, int i);
+    ray createRay(int x, int y);
     float intersectCone(ray one_ray);
     float intersectCube(ray one_ray);
     float intersectCylinder(ray one_ray);
     float intersectSphere(ray one_ray);
-    void lightingAt(glm::vec4 p, int i, RGBA *data);
-    glm::vec3 normalAt(glm::vec4 p, int i);
+    float intersectAt(ray one_ray, int i);
     glm::vec3 normalCone(glm::vec4 p);
     glm::vec3 normalCube(glm::vec4 p);
     glm::vec3 normalCylinder(glm::vec4 p);
     glm::vec3 normalSphere(glm::vec4 p);
+    glm::vec3 normalAt(glm::vec4 p, int i);
+    void lightingAt(glm::vec4 p, int i, RGBA *data);
+    void intersect(ray one_ray, RGBA *data);
+
     Canvas2D *m_canvas;
     Camera *m_camera;
     int m_width;

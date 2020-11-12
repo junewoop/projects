@@ -49,18 +49,14 @@ protected:
     // Called when the size of the canvas has been changed
     virtual void notifySizeChanged(int w, int h);
 
-
-
 private:
-
     std::unique_ptr<RayScene> m_rayScene;
 
-    //TODO: [BRUSH, INTERSECT, RAY] Put your member variables here.
     int m_brushType;
     RGBA m_brushColor;
     int m_currentRadius;
     std::unique_ptr<Brush> m_brush;
-    // [FILTER]
+
     float m_p;
     int m_blurRadius;
     float m_scaleX;

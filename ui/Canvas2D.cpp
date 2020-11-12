@@ -163,13 +163,10 @@ void Canvas2D::setScene(RayScene *scene) {
 }
 
 void Canvas2D::renderImage(Camera *camera, int width, int height) {
-    resize(width, height);
     if (m_rayScene) {
-        // @TODO: raytrace the scene based on settings
-        //        YOU MUST FILL THIS IN FOR INTERSECT/RAY
-
         // If you want the interface to stay responsive, make sure to call
         // QCoreApplication::processEvents() periodically during the rendering.
+        resize(width, height);
         m_rayScene->draw(this, camera);
     }
 }
@@ -177,7 +174,3 @@ void Canvas2D::renderImage(Camera *camera, int width, int height) {
 void Canvas2D::cancelRender() {
     // TODO: cancel the raytracer (optional)
 }
-
-
-
-

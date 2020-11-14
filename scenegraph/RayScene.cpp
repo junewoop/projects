@@ -17,7 +17,9 @@ RayScene::RayScene(Scene &scene) :
     m_height(0),
     m_data(nullptr),
     m_filmToWorld(glm::mat4x4()),
-    m_eye(glm::vec4())
+    m_eye(glm::vec4()),
+    m_useKDTree(false),
+    m_root(nullptr)
 {
     // Remember that any pointers or OpenGL objects (e.g. texture IDs) will
     // be deleted when the old scene is deleted (assuming you are managing
@@ -38,6 +40,20 @@ RayScene::RayScene(Scene &scene) :
 
 RayScene::~RayScene()
 {
+    if (m_root)
+        deleteNode(m_root);
+}
+
+void RayScene::deleteNode(KDNode *node){
+    if (!node->is_leaf){
+        deleteNode(node->child_1);
+        deleteNode(node->child_2);
+    }
+    delete node;
+}
+
+void RayScene::setKDTree(bool useKDTree){
+    m_useKDTree = useKDTree;
 }
 
 void RayScene::setCanvas(Canvas2D *canvas){
@@ -53,12 +69,48 @@ void RayScene::setCamera(Camera *camera){
     m_eye = glm::inverse(camera->getViewMatrix())*glm::vec4(0, 0, 0, 1);
 }
 
+
+void RayScene::constructKDTree(){
+    // Create boxes that surround primitives
+    float X_MIN = INFINITY;
+    float X_MAX = -INFINITY;
+    float Y_MIN = INFINITY;
+    float Y_MAX = -INFINITY;
+    float Z_MIN = INFINITY;
+    float Z_MAX = -INFINITY;
+    for (int i = 0; i < m_numPrims; i++){
+        std::unique_ptr<box> tmp_box = std::make_unique<box>();
+        *tmp_box = computeBox(*m_inverseTransformations[i]);
+        m_boxes.push_back(std::move(tmp_box));
+        X_MIN = std::min(X_MIN, m_boxes[i]->x_min);
+        X_MAX = std::max(X_MAX, m_boxes[i]->x_max);
+        Y_MIN = std::min(Y_MIN, m_boxes[i]->y_min);
+        Y_MAX = std::max(Y_MAX, m_boxes[i]->y_max);
+        Z_MIN = std::min(Z_MIN, m_boxes[i]->z_min);
+        Z_MAX = std::max(Z_MAX, m_boxes[i]->z_max);
+    }
+    m_root = new KDNode(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX);
+    // initialize more
+
+    recurKDTree(m_root);
+}
+
+void RayScene::recurKDTree(KDNode *node){
+    if (node->primitives.size() <= 5)
+        node->is_leaf = true;
+    else{
+        node->child_1 = new KDNode();
+        node->child_2 = new KDNode();
+        recurKDTree(node->child_1);
+        recurKDTree(node->child_2);
+    }
+}
+
 ray RayScene::createRay(int x, int y){
     glm::vec4 p_world = m_filmToWorld*glm::vec4((2.f*x)/m_width - 1.f, 1.f - (2.f * y)/m_height, -1.f, 1.f);
     glm::vec4 d = glm::vec4(p_world.xyz()-m_eye.xyz(), 0.f);
     d = glm::normalize(d);
     ray res = {m_eye, d};
-
     return res;
 }
 
@@ -278,7 +330,7 @@ void RayScene::intersect(ray one_ray, RGBA* data){
     }
 }
 
-void RayScene::draw(Canvas2D *canvas, Camera *camera){
+void RayScene::draw(Canvas2D *canvas, Camera *camera, bool useMultiThreading){
     setCanvas(canvas);
     setCamera(camera);
     RGBA *tmp_data = m_data;

@@ -39,9 +39,7 @@ Canvas2D::Canvas2D() :
     m_p(0),
     m_blurRadius(0),
     m_scaleX(0.f),
-    m_scaleY(0.f),
-    m_useKDTree(false),
-    m_useMultiThreading(true)
+    m_scaleY(0.f)
 {
     settingsChanged();
 }
@@ -97,8 +95,6 @@ void Canvas2D::settingsChanged() {
     m_blurRadius = settings.blurRadius;
     m_scaleX = settings.scaleX;
     m_scaleY = settings.scaleY;
-    m_useKDTree = settings.useKDTree;
-    m_useMultiThreading = settings.useMultiThreading;
 }
 
 // ********************************************************************************************
@@ -170,9 +166,8 @@ void Canvas2D::renderImage(Camera *camera, int width, int height) {
     if (m_rayScene) {
         // If you want the interface to stay responsive, make sure to call
         // QCoreApplication::processEvents() periodically during the rendering.
-        m_rayScene->setKDTree(m_useKDTree);
         resize(width, height);
-        m_rayScene->draw(this, camera, m_useMultiThreading);
+        m_rayScene->draw(this, camera);
     }
 }
 

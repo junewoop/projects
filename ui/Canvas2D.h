@@ -61,10 +61,6 @@ private:
     int m_blurRadius;
     float m_scaleX;
     float m_scaleY;
-
-
-    bool m_useKDTree;
-    bool m_useMultiThreading;
 };
 
 #endif // CANVAS2D_H

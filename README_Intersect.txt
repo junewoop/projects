@@ -33,5 +33,6 @@ Loading scenefiles more than once requires resizing to be updated properly.
 There are some pixelations, which are somewhat expected in regular implementation.
 Speckles occur in complex scenefiles such as chess.xml, but this only occurs
 within small microscopic region. I suspect this is caused by floating point compu-
-tations.
-Also, I could see some minor differences between rendered image and scene (cf. Piazza post @773)
+tations. Also, rendering time for chess files takes 2-3 minutes in my local computer.
+Lastly, I could observe some minor differences between rendered images and scenes. 
+(cf. Piazza post @773)

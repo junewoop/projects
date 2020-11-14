@@ -30,8 +30,7 @@ RayScene::RayScene(Scene &scene) :
         m_inverseTransformations.push_back(std::move(tmp_invMat));
         std::unique_ptr<glm::mat3x3> tmp_objToWor = std::make_unique<glm::mat3x3>();
         tmp4 = *m_transformations[i];
-        *tmp_objToWor = glm::inverse(glm::mat3x3(tmp4[0].x, tmp4[1].x, tmp4[2].x,
-                tmp4[0].y, tmp4[1].y, tmp4[2].y, tmp4[0].z, tmp4[1].z, tmp4[2].z));
+        *tmp_objToWor = glm::transpose(glm::inverse(glm::mat3x3(tmp4)));
         m_objectNormalToWorldNormal.push_back(std::move(tmp_objToWor));
     }
 }

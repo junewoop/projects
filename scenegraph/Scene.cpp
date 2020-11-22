@@ -74,6 +74,9 @@ void Scene::addPrimitive(const CS123ScenePrimitive &scenePrimitive, const glm::m
     tmp_material->cDiffuse.r *= m_global.kd;
     tmp_material->cDiffuse.g *= m_global.kd;
     tmp_material->cDiffuse.b *= m_global.kd;
+    tmp_material->cSpecular.r *= m_global.ks;
+    tmp_material->cSpecular.g *= m_global.ks;
+    tmp_material->cSpecular.b *= m_global.ks;
     m_materials.push_back(std::move(tmp_material));
 
     // add type data
@@ -99,7 +102,7 @@ void Scene::addPrimitiveDFS(CS123SceneNode *curNode, const glm::mat4x4 &curMat){
             tmp_mat = tmp_mat * glm::translate(curTrans->translate);
             break;
         case TRANSFORMATION_ROTATE:
-            tmp_mat = tmp_mat * glm::rotate(glm::degrees(curTrans->angle),
+            tmp_mat = tmp_mat * glm::rotate(curTrans->angle,
                                             curTrans->rotate);
             break;
         case TRANSFORMATION_SCALE:

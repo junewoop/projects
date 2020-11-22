@@ -118,10 +118,10 @@ float RayScene::intersectCylinder(ray one_ray){
     float t_tmp = t;
     if (one_ray.d.y != 0){
         t_tmp = -(0.5+one_ray.p.y)/one_ray.d.y;
-        if (pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015)
+        if (t_tmp >= 0 & pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015)
             t = std::min(t_tmp, t);
         t_tmp = (0.5-one_ray.p.y)/one_ray.d.y;
-        if (pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015)
+        if (t_tmp >= 0 & pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015)
             t = std::min(t_tmp, t);
     }
     float a = one_ray.d.x*one_ray.d.x + one_ray.d.z*one_ray.d.z;
@@ -245,10 +245,13 @@ void RayScene::lightingAt(glm::vec4 p, int i, RGBA *data){
     float d = 0.f;
     float f_att = 0.f;
     float dotProduct = 0.f;
+    glm::vec4 d_toLight = glm::vec4();
     for (int j = 0; j < m_numLights; j++){
+        d = glm::length(m_lightData[j]->pos.xyz()- p.xyz());
         if (m_lightData[j]->type == LightType::LIGHT_POINT){
-            if (1){
-                lightVector = glm::normalize(m_lightData[j]->pos.xyz()-p.xyz());
+            lightVector = glm::normalize(m_lightData[j]->pos.xyz()-p.xyz());
+            d_toLight = glm::vec4(lightVector, 0.f);
+            if (intersect(ray(p + 0.001f*d_toLight, d_toLight)).t > d-0.001f){
                 dotProduct = std::max(0.f, glm::dot(lightVector, normal));
                 add_r = dotProduct*dcolor[0];
                 add_g = dotProduct*dcolor[1];
@@ -258,7 +261,6 @@ void RayScene::lightingAt(glm::vec4 p, int i, RGBA *data){
                 add_r += pow(dotProduct, m_materials[i]->shininess)*scolor[0];
                 add_g += pow(dotProduct, m_materials[i]->shininess)*scolor[1];
                 add_b += pow(dotProduct, m_materials[i]->shininess)*scolor[2];
-                d = sqrt(glm::dot(m_lightData[j]->pos.xyz()- p.xyz(), m_lightData[j]->pos.xyz()- p.xyz()));
                 f_att = std::min(1.f/(glm::dot(m_lightData[j]->function, glm::vec3(1, d, d*d))), 1.f);
                 color[0] += f_att*m_lightData[j]->color[0]*add_r;
                 color[1] += f_att*m_lightData[j]->color[1]*add_g;
@@ -266,8 +268,9 @@ void RayScene::lightingAt(glm::vec4 p, int i, RGBA *data){
             }
         }
         if (m_lightData[j]->type == LightType::LIGHT_DIRECTIONAL){
-            if (1){
-                lightVector = glm::normalize(-m_lightData[j]->dir.xyz());
+            lightVector = glm::normalize(-m_lightData[j]->dir.xyz());
+            d_toLight = glm::vec4(lightVector, 0.f);
+            if (intersect(ray(p + 0.1f*d_toLight, d_toLight)).t > d-0.001f){
                 dotProduct = std::max(0.f, glm::dot(lightVector, normal));
                 add_r = dotProduct*dcolor[0];
                 add_g = dotProduct*dcolor[1];

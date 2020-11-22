@@ -240,14 +240,47 @@ void RayScene::lightingAt(glm::vec4 p, int i, RGBA *data){
     glm::vec3 lightVector;
     glm::vec4 color = m_materials[i]->cAmbient;
     glm::vec4 dcolor = m_materials[i]->cDiffuse;
-    float dotProduct;
+    glm::vec4 scolor = m_materials[i]->cSpecular;
+    float add_r = 0.f, add_g = 0.f, add_b = 0.f;
+    float d = 0.f;
+    float f_att = 0.f;
+    float dotProduct = 0.f;
     for (int j = 0; j < m_numLights; j++){
         if (m_lightData[j]->type == LightType::LIGHT_POINT){
-            lightVector = glm::normalize(m_lightData[j]->pos.xyz()-p.xyz());
-            dotProduct = std::max(0.f, glm::dot(lightVector, normal));
-            color[0] += dotProduct*m_lightData[j]->color[0]*dcolor[0];
-            color[1] += dotProduct*m_lightData[j]->color[1]*dcolor[1];
-            color[2] += dotProduct*m_lightData[j]->color[2]*dcolor[2];
+            if (1){
+                lightVector = glm::normalize(m_lightData[j]->pos.xyz()-p.xyz());
+                dotProduct = std::max(0.f, glm::dot(lightVector, normal));
+                add_r = dotProduct*dcolor[0];
+                add_g = dotProduct*dcolor[1];
+                add_b = dotProduct*dcolor[2];
+                dotProduct = glm::max(0.f, glm::dot(2*glm::dot(normal, lightVector)*normal - lightVector,
+                                      glm::normalize(m_eye.xyz() - p.xyz())));
+                add_r += pow(dotProduct, m_materials[i]->shininess)*scolor[0];
+                add_g += pow(dotProduct, m_materials[i]->shininess)*scolor[1];
+                add_b += pow(dotProduct, m_materials[i]->shininess)*scolor[2];
+                d = sqrt(glm::dot(m_lightData[j]->pos.xyz()- p.xyz(), m_lightData[j]->pos.xyz()- p.xyz()));
+                f_att = std::min(1.f/(glm::dot(m_lightData[j]->function, glm::vec3(1, d, d*d))), 1.f);
+                color[0] += f_att*m_lightData[j]->color[0]*add_r;
+                color[1] += f_att*m_lightData[j]->color[1]*add_g;
+                color[2] += f_att*m_lightData[j]->color[2]*add_b;
+            }
+        }
+        if (m_lightData[j]->type == LightType::LIGHT_DIRECTIONAL){
+            if (1){
+                lightVector = glm::normalize(-m_lightData[j]->dir.xyz());
+                dotProduct = std::max(0.f, glm::dot(lightVector, normal));
+                add_r = dotProduct*dcolor[0];
+                add_g = dotProduct*dcolor[1];
+                add_b = dotProduct*dcolor[2];
+                dotProduct = glm::max(0.f, glm::dot(2*glm::dot(normal, lightVector)*normal - lightVector,
+                                      glm::normalize(m_eye.xyz() - p.xyz())));
+                add_r += pow(dotProduct, m_materials[i]->shininess)*scolor[0];
+                add_g += pow(dotProduct, m_materials[i]->shininess)*scolor[1];
+                add_b += pow(dotProduct, m_materials[i]->shininess)*scolor[2];
+                color[0] += m_lightData[j]->color[0]*add_r;
+                color[1] += m_lightData[j]->color[1]*add_g;
+                color[2] += m_lightData[j]->color[2]*add_b;
+            }
         }
     }
     data->r = REAL2byte(color[0]);
@@ -256,7 +289,7 @@ void RayScene::lightingAt(glm::vec4 p, int i, RGBA *data){
     data->a = 255;
 }
 
-void RayScene::intersect(ray one_ray, RGBA* data){
+intsct RayScene::intersect(ray one_ray){
     float t = INFINITY;
     float tmp = 0;
     int i = -1;
@@ -267,22 +300,33 @@ void RayScene::intersect(ray one_ray, RGBA* data){
             i = j;
         }
     }
-    if (t != INFINITY)
-        lightingAt(one_ray.p + t*one_ray.d, i, data);
-    else{
-        data->r = 0;
-        data->g = 0;
-        data->b = 0;
-        data->a = 255;
-    }
+    return intsct(t, i);
 }
 
 void RayScene::draw(Canvas2D *canvas, Camera *camera){
     setCanvas(canvas);
     setCamera(camera);
     RGBA *tmp_data = m_data;
-    for (int y = 0; y < m_height; y++)
-        for (int x = 0; x < m_width; x++)
-            intersect(createRay(x, y), tmp_data++);
+    intsct tmp_intsct;
+    ray tmp_ray;
+    float t = 0.f;
+    int i = 0;
+    for (int y = 0; y < m_height; y++){
+        for (int x = 0; x < m_width; x++){
+            tmp_ray = createRay(x, y);
+            tmp_intsct = intersect(tmp_ray);
+            t = tmp_intsct.t;
+            i = tmp_intsct.i;
+            if (t != INFINITY)
+                lightingAt(tmp_ray.p + t*tmp_ray.d, i, tmp_data);
+            else{
+                tmp_data->r = 0;
+                tmp_data->g = 0;
+                tmp_data->b = 0;
+                tmp_data->a = 255;
+            }
+            tmp_data++;
+        }
+    }
     m_canvas->update();
 }

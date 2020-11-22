@@ -138,15 +138,17 @@ void Canvas2D::filterImage() {
     switch(settings.filterType) {
     case FILTER_BLUR:
         filter = std::make_unique<FilterBlur>(m_blurRadius);
+        filter->apply(this);
         break;
     case FILTER_EDGE_DETECT:
         filter = std::make_unique<FilterEdge>(m_p);
+        filter->apply(this);
         break;
     case FILTER_SCALE:
         filter = std::make_unique<FilterScale>(m_scaleX, m_scaleY);
+        filter->apply(this);
         break;
     }
-    filter->apply(this);
     this->update();
     // Leave this code here! This code ensures that the Canvas2D will be completely wiped before
     // drawing the new image.

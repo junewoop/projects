@@ -8,9 +8,19 @@
 #include <vector>
 
 struct ray {
+    ray() : p(glm::vec4()), d(glm::vec4()) {}
+    ray(glm::vec4 a, glm::vec4 b) : p(a), d(b){}
     glm::vec4 p;
     glm::vec4 d;
 };
+
+struct intsct{
+    intsct() : t(0.f), i(0){}
+    intsct(float a, int b) : t(a), i(b){}
+    float t;
+    int i;
+};
+
 /**
  * @class RayScene
  *
@@ -38,7 +48,7 @@ protected:
     glm::vec3 normalSphere(glm::vec4 p);
     glm::vec3 normalAt(glm::vec4 p, int i);
     void lightingAt(glm::vec4 p, int i, RGBA *data);
-    void intersect(ray one_ray, RGBA *data);
+    intsct intersect(ray one_ray);
 
     Canvas2D *m_canvas;
     Camera *m_camera;

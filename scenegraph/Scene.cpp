@@ -77,6 +77,9 @@ void Scene::addPrimitive(const CS123ScenePrimitive &scenePrimitive, const glm::m
     tmp_material->cSpecular.r *= m_global.ks;
     tmp_material->cSpecular.g *= m_global.ks;
     tmp_material->cSpecular.b *= m_global.ks;
+    tmp_material->cReflective.r *= m_global.ks;
+    tmp_material->cReflective.g *= m_global.ks;
+    tmp_material->cReflective.b *= m_global.ks;
     m_materials.push_back(std::move(tmp_material));
 
     // add type data

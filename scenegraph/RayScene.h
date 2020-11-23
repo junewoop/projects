@@ -48,8 +48,9 @@ protected:
     glm::vec3 normalCylinder(glm::vec4 p);
     glm::vec3 normalSphere(glm::vec4 p);
     glm::vec3 normalAt(glm::vec4 p, int i);
-    void lightingAt(glm::vec4 p, int i, RGBA *data, float u = 0.5f, float v = 0.5f);
+    glm::vec3 lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u = 0.5f, float v = 0.5f);
     intsct intersect(ray one_ray);
+    glm::vec3 recursiveLight(ray cur_ray, intsct cur_intsct, int num_left);
 
     Canvas2D *m_canvas;
     Camera *m_camera;

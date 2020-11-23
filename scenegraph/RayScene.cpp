@@ -78,8 +78,8 @@ intsct RayScene::intersectCone(ray one_ray){
         t_tmp = -(0.5+one_ray.p.y)/one_ray.d.y;
         if (t_tmp >= 0 & pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015){
             t = t_tmp;
-            v = 0.5 - one_ray.p.z - t_tmp*one_ray.d.z;
-            u = one_ray.p.x + t_tmp*one_ray.d.x + 0.5;
+            v = one_ray.p.z +t_tmp*one_ray.d.z + 0.5f;
+            u = one_ray.p.x + t_tmp*one_ray.d.x + 0.5f;
         }
     }
     float a = pow(one_ray.d.x, 2) + pow(one_ray.d.z, 2) - 0.25*pow(one_ray.d.y, 2);
@@ -90,8 +90,8 @@ intsct RayScene::intersectCone(ray one_ray){
         if (t_tmp >= 0 & fabs(one_ray.p.y + t_tmp*one_ray.d.y) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
-                u = 1.f - atan2(one_ray.p.z + t*one_ray.d.z, one_ray.p.x + t*one_ray.d.x)/(2*M_PI);
-                v = 0.5f - one_ray.p.y - t*one_ray.d.y;
+                u = -atan2(one_ray.p.z + t*one_ray.d.z, one_ray.p.x + t*one_ray.d.x)/(2*M_PI);
+                v = 0.5f + one_ray.p.y + t*one_ray.d.y;
             }
         }
         t_tmp = (-b+sqrt(b*b-a*c))/a;
@@ -99,7 +99,7 @@ intsct RayScene::intersectCone(ray one_ray){
             if (t_tmp < t){
                 t = t_tmp;
                 u = 1.f - atan2(one_ray.p.z + t*one_ray.d.z, one_ray.p.x + t*one_ray.d.x)/(2*M_PI);
-                v = 0.5f - one_ray.p.y - t*one_ray.d.y;
+                v = one_ray.p.y + t*one_ray.d.y + 0.5f;
             }
         }
     }
@@ -115,7 +115,7 @@ intsct RayScene::intersectCube(ray one_ray){
         if (t_tmp >= 0 & fabs(t_tmp*one_ray.d.x + one_ray.p.x) <= 0.500015 & fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
-                v = 0.5f - one_ray.p.z - t_tmp*one_ray.d.z;
+                v = one_ray.p.z + t_tmp*one_ray.d.z + 0.5f;
                 u = one_ray.p.x + t_tmp*one_ray.d.x + 0.5f;
             }
         }
@@ -123,7 +123,7 @@ intsct RayScene::intersectCube(ray one_ray){
         if (t_tmp >= 0 & fabs(t_tmp*one_ray.d.x + one_ray.p.x) <= 0.500015 & fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
-                v = 0.5f + one_ray.p.z + t_tmp*one_ray.d.z;
+                v = 0.5f - one_ray.p.z - t_tmp*one_ray.d.z;
                 u = one_ray.p.x + t_tmp*one_ray.d.x + 0.5f;
             }
         }
@@ -133,7 +133,7 @@ intsct RayScene::intersectCube(ray one_ray){
         if (t_tmp >= 0 & fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015 & fabs(t_tmp*one_ray.d.y + one_ray.p.y) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
-                v = 0.5f - one_ray.p.y - t_tmp*one_ray.d.y;
+                v = 0.5f + one_ray.p.y + t_tmp*one_ray.d.y;
                 u = one_ray.p.z + t_tmp*one_ray.d.z + 0.5f;
             }
         }
@@ -141,7 +141,7 @@ intsct RayScene::intersectCube(ray one_ray){
         if (t_tmp >= 0 & fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015 & fabs(t_tmp*one_ray.d.y + one_ray.p.y) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
-                v = 0.5f - one_ray.p.y - t_tmp*one_ray.d.y;
+                v = 0.5f + one_ray.p.y + t_tmp*one_ray.d.y;
                 u = -one_ray.p.z - t_tmp*one_ray.d.z + 0.5f;
             }
         }
@@ -152,7 +152,7 @@ intsct RayScene::intersectCube(ray one_ray){
             if (t_tmp < t){
                 t = t_tmp;
                 u = 0.5f - one_ray.p.x - t_tmp*one_ray.d.x;
-                v = -one_ray.p.y - t_tmp*one_ray.d.y + 0.5f;
+                v = one_ray.p.y + t_tmp*one_ray.d.y + 0.5f;
             }
         }
         t_tmp = (0.5 - one_ray.p.z)/one_ray.d.z;
@@ -160,7 +160,7 @@ intsct RayScene::intersectCube(ray one_ray){
             if (t_tmp < t){
                 t = t_tmp;
                 u = 0.5f + one_ray.p.x + t_tmp*one_ray.d.x;
-                v = -one_ray.p.y - t_tmp*one_ray.d.y + 0.5f;
+                v = one_ray.p.y + t_tmp*one_ray.d.y + 0.5f;
             }
         }
     }
@@ -176,7 +176,7 @@ intsct RayScene::intersectCylinder(ray one_ray){
         if (t_tmp >= 0 & pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015){
             if (t_tmp < t){
                 t = t_tmp;
-                v = 0.5 - one_ray.p.z - t_tmp*one_ray.d.z;
+                v = 0.5 + one_ray.p.z + t_tmp*one_ray.d.z;
                 u = one_ray.p.x + t_tmp*one_ray.d.x + 0.5;
             }
         }
@@ -184,7 +184,7 @@ intsct RayScene::intersectCylinder(ray one_ray){
         if (t_tmp >= 0 & pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015){
             if (t_tmp < t){
                 t = t_tmp;
-                v = 0.5 + one_ray.p.z + t_tmp*one_ray.d.z;
+                v = 0.5 - one_ray.p.z - t_tmp*one_ray.d.z;
                 u = one_ray.p.x + t_tmp*one_ray.d.x + 0.5;
             }
         }
@@ -198,8 +198,7 @@ intsct RayScene::intersectCylinder(ray one_ray){
             if (t_tmp < t){
                 t = t_tmp;
                 u = 1.f - atan2(one_ray.p.z + t*one_ray.d.z, one_ray.p.x + t*one_ray.d.x)/(2*M_PI);
-                u = u- floor(u);
-                v = 0.5f - one_ray.p.y - t*one_ray.d.y;
+                v = 0.5f + one_ray.p.y + t*one_ray.d.y;
             }
         }
         t_tmp = (-b+sqrt(b*b-a*c))/a;
@@ -207,8 +206,7 @@ intsct RayScene::intersectCylinder(ray one_ray){
             if (t_tmp < t){
                 t = t_tmp;
                 u = 1.f - atan2(one_ray.p.z + t*one_ray.d.z, one_ray.p.x + t*one_ray.d.x)/(2*M_PI);
-                u = u- floor(u);
-                v = 0.5f - one_ray.p.y - t*one_ray.d.y;
+                v = 0.5f + one_ray.p.y + t*one_ray.d.y;
             }
         }
     }
@@ -229,13 +227,13 @@ intsct RayScene::intersectSphere(ray one_ray){
     else if (t1 < 0) {
         u = -atan2(one_ray.p.z + t2*one_ray.d.z, one_ray.p.x + t2*one_ray.d.x)/(2*M_PI);
         v = one_ray.p.y + t2*one_ray.d.y;
-        v = asin(2.f * v)/M_PI + 0.5f;
+        v =  0.5f + asin(2.f * v)/M_PI;
         return intsct(t2, -1, u-floor(u), v-floor(v));
     }
     else {
         u = -atan2(one_ray.p.z + t1*one_ray.d.z, one_ray.p.x + t1*one_ray.d.x)/(2*M_PI);
         v = one_ray.p.y + t1*one_ray.d.y;
-        v = asin(2.f * v)/M_PI + 0.5f;
+        v = 0.5f + asin(2.f * v)/M_PI;
         return intsct(t1, -1, u-floor(u), v-floor(v));
     }
 }
@@ -292,6 +290,7 @@ glm::vec3 RayScene::normalCube(glm::vec4 p){
         return glm::vec3(0.f, 0.f, -1.f);
     if (fabs(p.z - 0.5) < 0.000015)
         return glm::vec3(0.f, 0.f, 1.f);
+    return glm::vec3(0.f);
 }
 
 glm::vec3 RayScene::normalCylinder(glm::vec4 p){
@@ -326,8 +325,7 @@ glm::vec3 RayScene::normalAt(glm::vec4 p, int i){
     }
 }
 
-void RayScene::lightingAt(glm::vec4 p, int i, RGBA *data, float u, float v){
-    glm::vec3 normal = glm::normalize(normalAt(p, i));
+glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, float v){
     glm::vec3 lightVector;
     glm::vec4 color = m_materials[i]->cAmbient;
     glm::vec4 dcolor = m_materials[i]->cDiffuse;
@@ -353,7 +351,7 @@ void RayScene::lightingAt(glm::vec4 p, int i, RGBA *data, float u, float v){
                 if (m_materials[i]->textureMap.isUsed & m_raySetting.useTextureMapping){
                     texImage = *m_textureImages[i];
                     s = static_cast<int>(u*m_materials[i]->textureMap.repeatU*texImage.width()) % texImage.width();
-                    t = static_cast<int>(v*m_materials[i]->textureMap.repeatV*texImage.height()) % texImage.height();
+                    t = static_cast<int>((1-v)*m_materials[i]->textureMap.repeatV*texImage.height()) % texImage.height();
                     texPixel = m_textureImages[i]->pixel(s, t);
                     add_r = (1.f-m_materials[i]->blend) * add_r + m_materials[i]->blend * (qRed(texPixel) / 255.f) * dotProduct;
                     add_g = (1.f-m_materials[i]->blend) * add_g + m_materials[i]->blend * (qGreen(texPixel) / 255.f) * dotProduct;
@@ -381,7 +379,7 @@ void RayScene::lightingAt(glm::vec4 p, int i, RGBA *data, float u, float v){
                 if (m_materials[i]->textureMap.isUsed & m_raySetting.useTextureMapping){
                     texImage = *m_textureImages[i];
                     s = static_cast<int>(u*m_materials[i]->textureMap.repeatU*texImage.width()) % texImage.width();
-                    t = static_cast<int>(v*m_materials[i]->textureMap.repeatV*texImage.height()) % texImage.height();
+                    t = static_cast<int>((1-v)*m_materials[i]->textureMap.repeatV*texImage.height()) % texImage.height();
                     texPixel = m_textureImages[i]->pixel(s, t);
                     add_r = (1.f-m_materials[i]->blend) * add_r + m_materials[i]->blend * (qRed(texPixel) / 255.f) * dotProduct;
                     add_g = (1.f-m_materials[i]->blend) * add_g + m_materials[i]->blend * (qGreen(texPixel) / 255.f) * dotProduct;
@@ -398,10 +396,7 @@ void RayScene::lightingAt(glm::vec4 p, int i, RGBA *data, float u, float v){
             }
         }
     }
-    data->r = REAL2byte(color[0]);
-    data->g = REAL2byte(color[1]);
-    data->b = REAL2byte(color[2]);
-    data->a = 255;
+    return glm::vec3(color[0], color[1], color[2]);
 }
 
 intsct RayScene::intersect(ray one_ray){
@@ -416,21 +411,42 @@ intsct RayScene::intersect(ray one_ray){
     return best;
 }
 
+glm::vec3 RayScene::recursiveLight(ray cur_ray, intsct cur_intsct, int num_left){
+    if (cur_intsct.t == INFINITY)
+        return glm::vec3(0.f);
+    glm::vec3 normal = glm::normalize(normalAt(cur_ray.p + cur_intsct.t*cur_ray.d, cur_intsct.i));
+    glm::vec3 nextColor = lightingAt(cur_ray.p + cur_intsct.t*cur_ray.d, cur_intsct.i, normal, cur_intsct.u, cur_intsct.v);
+    if (num_left == 0)
+        return nextColor;
+    else{
+        glm::vec3 inVector = cur_ray.d.xyz();
+        glm::vec4 nextd = glm::vec4(inVector - 2.f*glm::dot(inVector, normal)*normal, 0.f);
+        ray next_ray = ray(cur_ray.p + cur_intsct.t*cur_ray.d + 0.001f*nextd, nextd);
+        intsct next_intsct = intersect(next_ray);
+        glm::vec3 addColor = recursiveLight(next_ray, next_intsct, num_left - 1);
+        nextColor[0] += addColor[0] * m_materials[cur_intsct.i]->cReflective.r;
+        nextColor[1] += addColor[1] * m_materials[cur_intsct.i]->cReflective.g;
+        nextColor[2] += addColor[2] * m_materials[cur_intsct.i]->cReflective.b;
+        return nextColor;
+    }
+}
+
 void RayScene::draw(Canvas2D *canvas, Camera *camera, raySetting ray_setting){
     setCanvas(canvas);
     setCamera(camera);
     m_raySetting = ray_setting;
+    if (!m_raySetting.useReflection)
+        m_raySetting.reflectionDepth = 0;
     RGBA *tmp_data = m_data;
+    glm::vec3 tmp_color = glm::vec3(0.f);
     intsct tmp_intsct;
     ray tmp_ray;
     for (int y = 0; y < m_height; y++){
         for (int x = 0; x < m_width; x++){
             tmp_ray = createRay(x, y);
             tmp_intsct = intersect(tmp_ray);
-            if (tmp_intsct.t != INFINITY)
-                lightingAt(tmp_ray.p + tmp_intsct.t*tmp_ray.d, tmp_intsct.i, tmp_data, tmp_intsct.u, tmp_intsct.v);
-            else
-                *tmp_data = RGBA(0, 0, 0, 255);
+            tmp_color = recursiveLight(tmp_ray, tmp_intsct, m_raySetting.reflectionDepth);
+            *tmp_data = RGBA(REAL2byte(tmp_color.x), REAL2byte(tmp_color.y), REAL2byte(tmp_color.z), 255);
             tmp_data++;
         }
     }

@@ -2887,6 +2887,54 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>rayReflection</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>reflectionDepthEdit</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>130</x>
+     <y>1872</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>206</x>
+     <y>1899</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rayReflection</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>reflectionDepthLabel</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>130</x>
+     <y>1872</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>45</x>
+     <y>1899</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rayReflection</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>reflectionDepthSlider</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>130</x>
+     <y>1872</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>123</x>
+     <y>1899</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>checkAllRayFeatures()</slot>

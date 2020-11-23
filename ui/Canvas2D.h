@@ -12,7 +12,7 @@ class Camera;
 
 struct raySetting{
     raySetting() : useShadows(false), useTextureMapping(false), useReflection(false),
-        reflectionDepth(1), useMultiThreading(false), usePointLights(false),
+        reflectionDepth(0), useMultiThreading(false), usePointLights(false),
         useDirectionalLights(false), useKDTree(false){}
     raySetting(bool a, bool b, bool c, int d, bool e, bool f, bool g, bool h) :
         useShadows(a), useTextureMapping(b), useReflection(c),

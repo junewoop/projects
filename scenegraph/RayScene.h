@@ -15,10 +15,12 @@ struct ray {
 };
 
 struct intsct{
-    intsct() : t(0.f), i(0){}
-    intsct(float a, int b) : t(a), i(b){}
+    intsct() : t(INFINITY), i(-1), u(0.f), v(0.f){}
+    intsct(float a, int b, float c, float d) : t(a), i(b), u(c), v(d){}
     float t;
     int i;
+    float u;
+    float v;
 };
 
 /**
@@ -27,27 +29,26 @@ struct intsct{
  *  Students will implement this class as necessary in the Ray project.
  */
 
-
 class RayScene : public Scene {
 public:
     RayScene(Scene &scene);
     virtual ~RayScene();
-    void draw(Canvas2D *canvas, Camera *camera);
+    void draw(Canvas2D *canvas, Camera *camera, raySetting ray_setting);
 protected:
     void setCanvas(Canvas2D *canvas);
     void setCamera(Camera *camera);
     ray createRay(int x, int y);
-    float intersectCone(ray one_ray);
-    float intersectCube(ray one_ray);
-    float intersectCylinder(ray one_ray);
-    float intersectSphere(ray one_ray);
-    float intersectAt(ray one_ray, int i);
+    intsct intersectCone(ray one_ray);
+    intsct intersectCube(ray one_ray);
+    intsct intersectCylinder(ray one_ray);
+    intsct intersectSphere(ray one_ray);
+    intsct intersectAt(ray one_ray, int i);
     glm::vec3 normalCone(glm::vec4 p);
     glm::vec3 normalCube(glm::vec4 p);
     glm::vec3 normalCylinder(glm::vec4 p);
     glm::vec3 normalSphere(glm::vec4 p);
     glm::vec3 normalAt(glm::vec4 p, int i);
-    void lightingAt(glm::vec4 p, int i, RGBA *data);
+    void lightingAt(glm::vec4 p, int i, RGBA *data, float u = 0.5f, float v = 0.5f);
     intsct intersect(ray one_ray);
 
     Canvas2D *m_canvas;
@@ -59,6 +60,8 @@ protected:
     glm::vec4 m_eye;
     std::vector<std::unique_ptr<glm::mat4x4>> m_inverseTransformations;
     std::vector<std::unique_ptr<glm::mat3x3>> m_objectNormalToWorldNormal;
+    std::vector<std::unique_ptr<QImage>> m_textureImages;
+    raySetting m_raySetting;
 };
 
 #endif // RAYSCENE_H

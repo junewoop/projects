@@ -225,6 +225,8 @@ void MainWindow::dataBind() {
     BIND(BoolBinding::bindCheckbox(ui->rayShadows,               settings.useShadows))
     BIND(BoolBinding::bindCheckbox(ui->rayTextureMapping,        settings.useTextureMapping))
     BIND(BoolBinding::bindCheckbox(ui->rayReflection,            settings.useReflection))
+    BIND(IntBinding::bindSliderAndTextbox(
+               ui->reflectionDepthSlider, ui->reflectionDepthEdit, settings.reflectionDepth, 1.f, 200.f))
     BIND(BoolBinding::bindCheckbox(ui->rayRefraction,            settings.useRefraction))
     BIND(BoolBinding::bindCheckbox(ui->rayPointLights,           settings.usePointLights))
     BIND(BoolBinding::bindCheckbox(ui->rayDirectionalLights,     settings.useDirectionalLights))

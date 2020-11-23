@@ -39,7 +39,8 @@ Canvas2D::Canvas2D() :
     m_p(0),
     m_blurRadius(0),
     m_scaleX(0.f),
-    m_scaleY(0.f)
+    m_scaleY(0.f),
+    m_raySetting()
 {
     settingsChanged();
 }
@@ -62,6 +63,7 @@ void Canvas2D::paintEvent(QPaintEvent *e) {
 
 void Canvas2D::settingsChanged() {
     std::cout << "Canvas2d::settingsChanged() called. Settings have changed" << std::endl;
+    // Brush
     int s_type = settings.brushType;
     RGBA s_color = settings.brushColor;
     int s_radius = settings.brushRadius;
@@ -91,10 +93,17 @@ void Canvas2D::settingsChanged() {
         m_brush = std::make_unique<SmudgeBrush>(m_brushColor, m_currentRadius);
         break;
     }
+
+    // Filter
     m_p = settings.edgeDetectSensitivity;
     m_blurRadius = settings.blurRadius;
     m_scaleX = settings.scaleX;
     m_scaleY = settings.scaleY;
+
+    // Ray
+    m_raySetting = raySetting(settings.useShadows, settings.useTextureMapping, settings.useReflection,
+                   settings.reflectionDepth, settings.useMultiThreading, settings.usePointLights,
+                              settings.useDirectionalLights, settings.useKDTree);
 }
 
 // ********************************************************************************************
@@ -169,7 +178,7 @@ void Canvas2D::renderImage(Camera *camera, int width, int height) {
         // If you want the interface to stay responsive, make sure to call
         // QCoreApplication::processEvents() periodically during the rendering.
         resize(width, height);
-        m_rayScene->draw(this, camera);
+        m_rayScene->draw(this, camera, m_raySetting);
     }
 }
 

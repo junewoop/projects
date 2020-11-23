@@ -128,6 +128,7 @@ struct Settings {
     bool useShadows;            // Enable or disable shadows.
     bool useTextureMapping;     // Enable or disable texture mapping.
     bool useReflection;         // Enable or disable reflection.
+    int reflectionDepth;        // Depth of the reflection
     bool useRefraction;         // Enable or disable refraction (this is extra credit).
     bool useMultiThreading;     // Enable or disable multi-threading (extra credit).
     bool usePointLights;        // Enable or disable point lighting.

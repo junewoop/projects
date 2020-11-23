@@ -65,6 +65,7 @@ void Settings::loadSettingsOrDefaults() {
     useShadows = s.value("useShadows", false).toBool();
     useTextureMapping = s.value("useTextureMapping", false).toBool();
     useReflection = s.value("useReflection", false).toBool();
+    reflectionDepth = s.value("reflectionDepth", 1).toInt();
     useRefraction = s.value("useRefraction", false).toBool();
     useMultiThreading = s.value("useMultiThreading", true).toBool();
     usePointLights = s.value("usePointLights", true).toBool();
@@ -125,6 +126,7 @@ void Settings::saveSettings() {
     s.setValue("useShadows", useShadows);
     s.setValue("useTextureMapping", useTextureMapping);
     s.setValue("useReflection", useReflection);
+    s.setValue("reflectionDepth", reflectionDepth);
     s.setValue("useRefraction", useRefraction);
     s.setValue("useMultiThreading", useMultiThreading);
     s.setValue("usePointLights", usePointLights);

@@ -437,6 +437,7 @@ void RayScene::draw(Canvas2D *canvas, Camera *camera, raySetting ray_setting){
     m_raySetting = ray_setting;
     if (!m_raySetting.useReflection)
         m_raySetting.reflectionDepth = 0;
+    // else m_raySetting.reflectionDepth = <ENTER VALUE HERE>;
     RGBA *tmp_data = m_data;
     glm::vec3 tmp_color = glm::vec3(0.f);
     intsct tmp_intsct;

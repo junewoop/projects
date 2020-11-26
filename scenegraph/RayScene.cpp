@@ -1,25 +1,12 @@
 #include "RayScene.h"
 #include "Settings.h"
 #include "CS123SceneData.h"
-#include <algorithm>
+
 #include <iostream>
-#include <chrono>
 
 inline unsigned char REAL2byte(float f) {
     int i = static_cast<int>((f * 255.0 + 0.5));
     return (i < 0) ? 0 : (i > 255) ? 255 : i;
-}
-
-inline bool compareX(AABA *b_1, AABA *b_2){
-    return b_1->x_min < b_2->x_min;
-}
-
-inline bool compareY(AABA *b_1, AABA *b_2){
-    return b_1->y_min < b_2->y_min;
-}
-
-inline bool compareZ(AABA *b_1, AABA *b_2){
-    return b_1->z_min < b_2->z_min;
 }
 
 RayScene::RayScene(Scene &scene) :
@@ -31,8 +18,7 @@ RayScene::RayScene(Scene &scene) :
     m_data(nullptr),
     m_filmToWorld(glm::mat4x4()),
     m_eye(glm::vec4()),
-    m_raySetting(),
-    m_root(nullptr)
+    m_raySetting()
 {
     // Remember that any pointers or OpenGL objects (e.g. texture IDs) will
     // be deleted when the old scene is deleted (assuming you are managing
@@ -60,183 +46,6 @@ RayScene::RayScene(Scene &scene) :
 
 RayScene::~RayScene()
 {
-    if (m_root) deleteNode(m_root);
-}
-
-void RayScene::deleteNode(KDNode *node){
-    if (!node->is_leaf){
-        deleteNode(node->child_1);
-        deleteNode(node->child_2);
-    }
-    delete[] node->boxes;
-    delete node;
-}
-
-AABA RayScene::computeAABA(glm::mat4x4 &inverse){
-    AABA b = AABA();
-    glm::vec4 p = glm::vec4();
-    for (int i = 0; i < 6; i ++){
-        p = inverse * CHARPOINTS[i];
-        if(p.x < b.x_min) b.x_min = p.x;
-        if(p.x > b.x_max) b.x_max = p.x;
-        if(p.y < b.x_min) b.y_min = p.y;
-        if(p.y > b.x_max) b.y_max = p.y;
-        if(p.z < b.x_min) b.z_min = p.z;
-        if(p.z > b.x_max) b.z_max = p.z;
-    }
-    return b;
-}
-
-void RayScene::constructKDTree(){
-    auto start = std::chrono::steady_clock::now();
-    float X_MIN = INFINITY;
-    float Y_MIN = INFINITY;
-    float Z_MIN = INFINITY;
-    float X_MAX = -INFINITY;
-    float Y_MAX = -INFINITY;
-    float Z_MAX = -INFINITY;
-    for (int i = 0; i < m_numPrims; i++){
-        AABA tmp_box = computeAABA(*m_inverseTransformations[i]);
-        m_boxes.push_back(tmp_box);
-        X_MIN = std::min(X_MIN, m_boxes[i].x_min);
-        Y_MIN = std::min(Y_MIN, m_boxes[i].y_min);
-        Z_MIN = std::min(Z_MIN, m_boxes[i].z_min);
-        X_MAX = std::max(X_MAX, m_boxes[i].x_max);
-        Y_MAX = std::max(Y_MAX, m_boxes[i].y_max);
-        Z_MAX = std::max(Z_MAX, m_boxes[i].z_max);
-    }
-    m_root = new KDNode(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX);
-    m_root->boxes = new AABA*[m_numPrims];
-    for (int i = 0; i < m_numPrims; i++)
-        m_root->boxes[i] = &m_boxes[i];
-    m_root->numBox = m_numPrims;
-    recurKDTree(m_root);
-    auto end = std::chrono::steady_clock::now();
-    std::cout << "elapsed time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << std::endl;
-}
-
-void RayScene::recurKDTree(KDNode *node){
-    if (node->numBox <= 10 || node->trial == 3){
-        node->is_leaf = true;
-        return;
-    }
-    float c_tmp = 0.f, c_best = INFINITY;
-    int i_best = -1;
-    int j_1 = 0, j_2 = 0;
-    AABA** left = new AABA*[node->numBox];
-    AABA** right = new AABA*[node->numBox];
-    switch (node->axis) {
-    case X: {
-        std::sort(node->boxes, node->boxes + node->numBox, compareX);
-        for (int i = 0; i < node->numBox; i++){
-            c_tmp = i*(node->boxes[i]->x_min - node->x_min) + (node->numBox-i)*(node->x_max - node->boxes[i]->x_min);
-            if (c_tmp < c_best){
-                c_best = c_tmp;
-                i_best = i;
-            }
-        }
-        node->boundary = node->boxes[i_best]->x_min;
-        for (int i = 0; i < node->numBox; i++){
-            if (node->boxes[i]->x_min < node->boundary)
-                left[j_1++] = node->boxes[i];
-            if (node->boxes[i]->x_max > node->boundary)
-                right[j_2++] = node->boxes[i];
-        }
-        if (j_1 == 0 || j_2 == 0 || j_1 == node->numBox || j_2 == node->numBox){
-            delete[] left;
-            delete[] right;
-            node->axis = Y;
-            node->trial++;
-            recurKDTree(node);
-            return;
-        }
-        node->child_1 = new KDNode(node->x_min, node->boundary, node->y_min, node->y_max, node->z_min, node->z_max);
-        node->child_2 = new KDNode(node->boundary, node->x_max, node->y_min, node->y_max, node->z_min, node->z_max);
-        node->child_1->axis = Y;
-        node->child_2->axis = Y;
-        node->child_1->boxes = left;
-        node->child_2->boxes = right;
-        node->child_1->numBox = j_1;
-        node->child_2->numBox = j_2;
-        recurKDTree(node->child_1);
-        recurKDTree(node->child_2);
-        return;
-    }
-    case Y: {
-        std::sort(node->boxes, node->boxes + node->numBox, compareY);
-        for (int i = 0; i < node->numBox; i++){
-            c_tmp = i*(node->boxes[i]->y_min - node->y_min) + (node->numBox-i)*(node->y_max - node->boxes[i]->y_min);
-            if (c_tmp < c_best){
-                c_best = c_tmp;
-                i_best = i;
-            }
-        }
-        node->boundary = node->boxes[i_best]->y_min;
-        for (int i = 0; i < node->numBox; i++){
-            if (node->boxes[i]->y_min < node->boundary)
-                left[j_1++] = node->boxes[i];
-            if (node->boxes[i]->y_max > node->boundary)
-                right[j_2++] = node->boxes[i];
-        }
-        if (j_1 == 0 || j_2 == 0 || j_1 == node->numBox || j_2 == node->numBox){
-            delete[] left;
-            delete[] right;
-            node->axis = Z;
-            node->trial++;
-            recurKDTree(node);
-            return;
-        }
-        node->child_1 = new KDNode(node->x_min, node->x_max, node->y_min, node->boundary, node->z_min, node->z_max);
-        node->child_2 = new KDNode(node->x_min, node->x_max, node->boundary, node->y_max, node->z_min, node->z_max);
-        node->child_1->axis = Z;
-        node->child_2->axis = Z;
-        node->child_1->boxes = left;
-        node->child_2->boxes = right;
-        node->child_1->numBox = j_1;
-        node->child_2->numBox = j_2;
-        recurKDTree(node->child_1);
-        recurKDTree(node->child_2);
-        return;
-        break;
-    }
-    case Z: {
-        std::sort(node->boxes, node->boxes + node->numBox, compareZ);
-        for (int i = 0; i < node->numBox; i++){
-            c_tmp = i*(node->boxes[i]->z_min - node->z_min) + (node->numBox-i)*(node->z_max - node->boxes[i]->z_min);
-            if (c_tmp < c_best){
-                c_best = c_tmp;
-                i_best = i;
-            }
-        }
-        node->boundary = node->boxes[i_best]->z_min;
-        for (int i = 0; i < node->numBox; i++){
-            if (node->boxes[i]->z_min < node->boundary)
-                left[j_1++] = node->boxes[i];
-            if (node->boxes[i]->z_max > node->boundary)
-                right[j_2++] = node->boxes[i];
-        }
-        if (j_1 == 0 || j_2 == 0 || j_1 == node->numBox || j_2 == node->numBox){
-            delete[] left;
-            delete[] right;
-            node->axis = X;
-            node->trial++;
-            recurKDTree(node);
-            return;
-        }
-        node->child_1 = new KDNode(node->x_min, node->x_max, node->y_min, node->y_max, node->z_min, node->boundary);
-        node->child_2 = new KDNode(node->x_min, node->x_max, node->y_min, node->y_max, node->boundary, node->z_max);
-        node->child_1->axis = X;
-        node->child_2->axis = X;
-        node->child_1->boxes = left;
-        node->child_2->boxes = right;
-        node->child_1->numBox = j_1;
-        node->child_2->numBox = j_2;
-        recurKDTree(node->child_1);
-        recurKDTree(node->child_2);
-        return;
-        break;
-    }}
-    return;
 }
 
 void RayScene::setCanvas(Canvas2D *canvas){

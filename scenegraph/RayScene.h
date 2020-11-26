@@ -23,6 +23,42 @@ struct intsct{
     float v;
 };
 
+struct AABA{
+    AABA(): x_min(INFINITY), x_max(-INFINITY), y_min(INFINITY), y_max(-INFINITY), z_min(INFINITY), z_max(-INFINITY) {}
+    AABA(float a, float b, float c, float d, float e, float f): x_min(a), x_max(b), y_min(c), y_max(d), z_min(e), z_max(f) {}
+    float x_min;
+    float x_max;
+    float y_min;
+    float y_max;
+    float z_min;
+    float z_max;
+};
+
+enum DivideAxis {X, Y, Z};
+
+struct KDNode : AABA{
+    KDNode(): AABA(), is_leaf(false), axis(X), child_1(nullptr), child_2(nullptr),
+        boxes(nullptr), boundary(0.f), numBox(0), trial(0) {}
+    KDNode(float a, float b, float c, float d, float e, float f): AABA(a, b, c, d, e, f),
+        is_leaf(false), axis(X), child_1(nullptr), child_2(nullptr),
+        boxes(nullptr), boundary(0.f), numBox(0), trial(0) {}
+    bool is_leaf;
+    DivideAxis axis;
+    KDNode *child_1;
+    KDNode *child_2;
+    AABA **boxes;
+    float boundary;
+    int numBox;
+    int trial;
+};
+
+std::vector<glm::vec4> CHARPOINTS = {glm::vec4(-0.5f, 0.f, 0.f, 1.f),
+            glm::vec4(0.5f, 0.f, 0.f, 1.f),
+            glm::vec4(0.f, -0.5f, 0.f, 1.f),
+            glm::vec4(0.f, 0.5f, 0.f, 1.f),
+            glm::vec4(0.f, 0.f, -0.5f, 1.f),
+            glm::vec4(0.f, 0.f, 0.5f, 1.f)};
+
 /**
  * @class RayScene
  *
@@ -51,6 +87,10 @@ protected:
     glm::vec3 lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u = 0.5f, float v = 0.5f);
     intsct intersect(ray one_ray);
     glm::vec3 recursiveLight(ray cur_ray, intsct cur_intsct, int num_left);
+    AABA computeAABA(glm::mat4x4 &inverse);
+    void constructKDTree();
+    void recurKDTree(KDNode *node);
+    void deleteNode(KDNode *node);
 
     Canvas2D *m_canvas;
     Camera *m_camera;
@@ -63,6 +103,8 @@ protected:
     std::vector<std::unique_ptr<glm::mat3x3>> m_objectNormalToWorldNormal;
     std::vector<std::unique_ptr<QImage>> m_textureImages;
     raySetting m_raySetting;
+    KDNode *m_root;
+    std::vector<AABA> m_boxes;
 };
 
 #endif // RAYSCENE_H

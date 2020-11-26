@@ -2,8 +2,8 @@
 #include "Settings.h"
 #include "CS123SceneData.h"
 #include <algorithm>
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 inline unsigned char REAL2byte(float f) {
     int i = static_cast<int>((f * 255.0 + 0.5));
@@ -63,6 +63,7 @@ RayScene::~RayScene()
     if (m_root) deleteNode(m_root);
 }
 
+
 void RayScene::deleteNode(KDNode *node){
     if (!node->is_leaf){
         deleteNode(node->child_1);
@@ -79,10 +80,10 @@ AABA RayScene::computeAABA(glm::mat4x4 &inverse){
         p = inverse * CHARPOINTS[i];
         if(p.x < b.x_min) b.x_min = p.x;
         if(p.x > b.x_max) b.x_max = p.x;
-        if(p.y < b.x_min) b.y_min = p.y;
-        if(p.y > b.x_max) b.y_max = p.y;
-        if(p.z < b.x_min) b.z_min = p.z;
-        if(p.z > b.x_max) b.z_max = p.z;
+        if(p.y < b.y_min) b.y_min = p.y;
+        if(p.y > b.y_max) b.y_max = p.y;
+        if(p.z < b.z_min) b.z_min = p.z;
+        if(p.z > b.z_max) b.z_max = p.z;
     }
     return b;
 }
@@ -97,6 +98,7 @@ void RayScene::constructKDTree(){
     float Z_MAX = -INFINITY;
     for (int i = 0; i < m_numPrims; i++){
         AABA tmp_box = computeAABA(*m_inverseTransformations[i]);
+        tmp_box.prim_index = i;
         m_boxes.push_back(tmp_box);
         X_MIN = std::min(X_MIN, m_boxes[i].x_min);
         Y_MIN = std::min(Y_MIN, m_boxes[i].y_min);
@@ -112,11 +114,12 @@ void RayScene::constructKDTree(){
     m_root->numBox = m_numPrims;
     recurKDTree(m_root);
     auto end = std::chrono::steady_clock::now();
-    std::cout << "elapsed time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << std::endl;
+    std::cout << "KDTree construction time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+              << " milliseconds" << std::endl;
 }
-
 void RayScene::recurKDTree(KDNode *node){
-    if (node->numBox <= 10 || node->trial == 3){
+    // std::cout << "numBox: " << node->numBox << std::endl;
+    if ((node->numBox <= 5) || (node->trial == 3)){
         node->is_leaf = true;
         return;
     }
@@ -142,11 +145,12 @@ void RayScene::recurKDTree(KDNode *node){
             if (node->boxes[i]->x_max > node->boundary)
                 right[j_2++] = node->boxes[i];
         }
-        if (j_1 == 0 || j_2 == 0 || j_1 == node->numBox || j_2 == node->numBox){
+        if ((j_1 == 0) || (j_2 == 0) || (j_1 == node->numBox) || (j_2 == node->numBox)){
             delete[] left;
             delete[] right;
             node->axis = Y;
             node->trial++;
+            printf("bp5\n");
             recurKDTree(node);
             return;
         }
@@ -178,7 +182,7 @@ void RayScene::recurKDTree(KDNode *node){
             if (node->boxes[i]->y_max > node->boundary)
                 right[j_2++] = node->boxes[i];
         }
-        if (j_1 == 0 || j_2 == 0 || j_1 == node->numBox || j_2 == node->numBox){
+        if ((j_1 == 0) || (j_2 == 0) || (j_1 == node->numBox) || (j_2 == node->numBox)){
             delete[] left;
             delete[] right;
             node->axis = Z;
@@ -197,7 +201,6 @@ void RayScene::recurKDTree(KDNode *node){
         recurKDTree(node->child_1);
         recurKDTree(node->child_2);
         return;
-        break;
     }
     case Z: {
         std::sort(node->boxes, node->boxes + node->numBox, compareZ);
@@ -215,7 +218,7 @@ void RayScene::recurKDTree(KDNode *node){
             if (node->boxes[i]->z_max > node->boundary)
                 right[j_2++] = node->boxes[i];
         }
-        if (j_1 == 0 || j_2 == 0 || j_1 == node->numBox || j_2 == node->numBox){
+        if ((j_1 == 0) || (j_2 == 0) || (j_1 == node->numBox) || (j_2 == node->numBox)){
             delete[] left;
             delete[] right;
             node->axis = X;
@@ -234,9 +237,8 @@ void RayScene::recurKDTree(KDNode *node){
         recurKDTree(node->child_1);
         recurKDTree(node->child_2);
         return;
-        break;
-    }}
-    return;
+    }
+    }
 }
 
 void RayScene::setCanvas(Canvas2D *canvas){
@@ -623,6 +625,8 @@ glm::vec3 RayScene::recursiveLight(ray cur_ray, intsct cur_intsct, int num_left)
 }
 
 void RayScene::draw(Canvas2D *canvas, Camera *camera, raySetting ray_setting){
+    constructKDTree();
+/*
     setCanvas(canvas);
     setCamera(camera);
     m_raySetting = ray_setting;
@@ -642,5 +646,5 @@ void RayScene::draw(Canvas2D *canvas, Camera *camera, raySetting ray_setting){
             tmp_data++;
         }
     }
-    m_canvas->update();
+    m_canvas->update();*/
 }

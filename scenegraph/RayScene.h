@@ -24,14 +24,17 @@ struct intsct{
 };
 
 struct AABA{
-    AABA(): x_min(INFINITY), x_max(-INFINITY), y_min(INFINITY), y_max(-INFINITY), z_min(INFINITY), z_max(-INFINITY) {}
-    AABA(float a, float b, float c, float d, float e, float f): x_min(a), x_max(b), y_min(c), y_max(d), z_min(e), z_max(f) {}
+    AABA(): x_min(INFINITY), x_max(-INFINITY), y_min(INFINITY), y_max(-INFINITY), z_min(INFINITY), z_max(-INFINITY),
+    prim_index(-1){}
+    AABA(float a, float b, float c, float d, float e, float f, int i): x_min(a), x_max(b), y_min(c), y_max(d), z_min(e), z_max(f),
+    prim_index(i) {}
     float x_min;
     float x_max;
     float y_min;
     float y_max;
     float z_min;
     float z_max;
+    int prim_index;
 };
 
 enum DivideAxis {X, Y, Z};
@@ -39,7 +42,7 @@ enum DivideAxis {X, Y, Z};
 struct KDNode : AABA{
     KDNode(): AABA(), is_leaf(false), axis(X), child_1(nullptr), child_2(nullptr),
         boxes(nullptr), boundary(0.f), numBox(0), trial(0) {}
-    KDNode(float a, float b, float c, float d, float e, float f): AABA(a, b, c, d, e, f),
+    KDNode(float a, float b, float c, float d, float e, float f): AABA(a, b, c, d, e, f, -1),
         is_leaf(false), axis(X), child_1(nullptr), child_2(nullptr),
         boxes(nullptr), boundary(0.f), numBox(0), trial(0) {}
     bool is_leaf;
@@ -52,7 +55,8 @@ struct KDNode : AABA{
     int trial;
 };
 
-std::vector<glm::vec4> CHARPOINTS = {glm::vec4(-0.5f, 0.f, 0.f, 1.f),
+
+static std::vector<glm::vec4> CHARPOINTS{glm::vec4(-0.5f, 0.f, 0.f, 1.f),
             glm::vec4(0.5f, 0.f, 0.f, 1.f),
             glm::vec4(0.f, -0.5f, 0.f, 1.f),
             glm::vec4(0.f, 0.5f, 0.f, 1.f),

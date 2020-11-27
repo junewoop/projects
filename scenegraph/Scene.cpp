@@ -61,7 +61,7 @@ void Scene::parse(Scene *sceneToFill, CS123ISceneParser *parser) {
     CS123SceneNode *curNode = parser->getRootNode();
     sceneToFill->m_numPrims = 0;
     glm::mat4x4 curMat = glm::mat4(1.f);
-    sceneToFill->addPrimitiveDFS(curNode, curMat);
+    if (curNode) sceneToFill->addPrimitiveDFS(curNode, curMat);
 }
 
 void Scene::addPrimitive(const CS123ScenePrimitive &scenePrimitive, const glm::mat4x4 &matrix) {

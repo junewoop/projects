@@ -5,6 +5,8 @@
 #include <chrono>
 #include <iostream>
 
+static int a = 1;
+
 inline unsigned char REAL2byte(float f) {
     int i = static_cast<int>((f * 255.0 + 0.5));
     return (i < 0) ? 0 : (i > 255) ? 255 : i;
@@ -32,7 +34,8 @@ RayScene::RayScene(Scene &scene) :
     m_filmToWorld(glm::mat4x4()),
     m_eye(glm::vec4()),
     m_raySetting(),
-    m_root(nullptr)
+    m_root(nullptr),
+    m_intersectfunction(nullptr)
 {
     // Remember that any pointers or OpenGL objects (e.g. texture IDs) will
     // be deleted when the old scene is deleted (assuming you are managing
@@ -114,13 +117,19 @@ void RayScene::constructKDTree(){
     m_root->numBox = m_numPrims;
     recurKDTree(m_root);
     auto end = std::chrono::steady_clock::now();
-    std::cout << "KDTree construction time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+    std::cout << "KDTree construction time: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
               << " milliseconds" << std::endl;
+    std::cout << "num nodes: " << m_numPrims << std::endl;
 }
 void RayScene::recurKDTree(KDNode *node){
     // std::cout << "numBox: " << node->numBox << std::endl;
     if ((node->numBox <= 5) || (node->trial == 3)){
         node->is_leaf = true;
+        for (int i = 0; i < node->numBox; i++){
+            std::cout << node->boxes[i]->prim_index << " ";
+        }
+        std::cout<< std::endl;
         return;
     }
     float c_tmp = 0.f, c_best = INFINITY;
@@ -140,7 +149,7 @@ void RayScene::recurKDTree(KDNode *node){
         }
         node->boundary = node->boxes[i_best]->x_min;
         for (int i = 0; i < node->numBox; i++){
-            if (node->boxes[i]->x_min < node->boundary)
+            if (node->boxes[i]->x_max < node->boundary)
                 left[j_1++] = node->boxes[i];
             if (node->boxes[i]->x_max > node->boundary)
                 right[j_2++] = node->boxes[i];
@@ -150,7 +159,6 @@ void RayScene::recurKDTree(KDNode *node){
             delete[] right;
             node->axis = Y;
             node->trial++;
-            printf("bp5\n");
             recurKDTree(node);
             return;
         }
@@ -263,7 +271,7 @@ ray RayScene::createRay(int x, int y){
     return res;
 }
 
-intsct RayScene::intersectCone(ray one_ray){
+intsct RayScene::intersectCone(ray &one_ray){
     float t = INFINITY;
     float u = 0.f, v = 0.f;
     float t_tmp = t;
@@ -299,7 +307,7 @@ intsct RayScene::intersectCone(ray one_ray){
     return intsct(t, -1, u-floor(u), v-floor(v));
 }
 
-intsct RayScene::intersectCube(ray one_ray){
+intsct RayScene::intersectCube(ray &one_ray){
     float t = INFINITY;
     float t_tmp = t;
     float u = 0.f, v = 0.f;
@@ -360,7 +368,7 @@ intsct RayScene::intersectCube(ray one_ray){
     return intsct(t, -1, u- floor(u), v-floor(v));
 }
 
-intsct RayScene::intersectCylinder(ray one_ray){
+intsct RayScene::intersectCylinder(ray &one_ray){
     float t = INFINITY;
     float t_tmp = t;
     float u = 0.f, v = 0.f;
@@ -406,7 +414,7 @@ intsct RayScene::intersectCylinder(ray one_ray){
     return intsct(t, -1, u-floor(u), v-floor(v));
 }
 
-intsct RayScene::intersectSphere(ray one_ray){
+intsct RayScene::intersectSphere(ray &one_ray){
     float a = glm::dot(one_ray.d, one_ray.d);
     float b = glm::dot(one_ray.d, one_ray.p);
     float c = glm::dot(one_ray.p, one_ray.p) - 1.25f;
@@ -431,7 +439,7 @@ intsct RayScene::intersectSphere(ray one_ray){
     }
 }
 
-intsct RayScene::intersectAt(ray one_ray, int i){
+intsct RayScene::intersectAt(ray &one_ray, int i){
     ray new_ray;
     intsct tmp_intsct = intsct();
     new_ray.p = *m_inverseTransformations[i] * one_ray.p;
@@ -520,6 +528,7 @@ glm::vec3 RayScene::normalAt(glm::vec4 p, int i){
 
 glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, float v){
     glm::vec3 lightVector;
+    ray tmp_ray;
     glm::vec4 color = m_materials[i]->cAmbient;
     glm::vec4 dcolor = m_materials[i]->cDiffuse;
     glm::vec4 scolor = m_materials[i]->cSpecular;
@@ -536,7 +545,8 @@ glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, fl
         if ((m_lightData[j]->type == LightType::LIGHT_POINT) & m_raySetting.usePointLights){
             lightVector = glm::normalize(m_lightData[j]->pos.xyz()-p.xyz());
             d_toLight = glm::vec4(lightVector, 0.f);
-            if (intersect(ray(p + 0.001f*d_toLight, d_toLight)).t > d-0.001f || !m_raySetting.useShadows){
+            tmp_ray = ray(p + 0.001f*d_toLight, d_toLight);
+            if ((this->*m_intersectfunction)(tmp_ray).t > d-0.001f || !m_raySetting.useShadows){
                 dotProduct = std::max(0.f, glm::dot(lightVector, normal));
                 add_r = dotProduct*dcolor[0];
                 add_g = dotProduct*dcolor[1];
@@ -564,7 +574,8 @@ glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, fl
         if ((m_lightData[j]->type == LightType::LIGHT_DIRECTIONAL) & m_raySetting.useDirectionalLights){
             lightVector = glm::normalize(-m_lightData[j]->dir.xyz());
             d_toLight = glm::vec4(lightVector, 0.f);
-            if (intersect(ray(p + 0.1f*d_toLight, d_toLight)).t > d-0.001f || !m_raySetting.useShadows){
+            tmp_ray = ray(p + 0.1f*d_toLight, d_toLight);
+            if ((this->*m_intersectfunction)(tmp_ray).t > d-0.001f || !m_raySetting.useShadows){
                 dotProduct = std::max(0.f, glm::dot(lightVector, normal));
                 add_r = dotProduct*dcolor[0];
                 add_g = dotProduct*dcolor[1];
@@ -592,7 +603,7 @@ glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, fl
     return glm::vec3(color[0], color[1], color[2]);
 }
 
-intsct RayScene::intersect(ray one_ray){
+intsct RayScene::intersect(ray &one_ray){
     intsct tmp = intsct();
     intsct best = intsct();
     for (int i = 0; i < m_numPrims; i++){
@@ -604,7 +615,7 @@ intsct RayScene::intersect(ray one_ray){
     return best;
 }
 
-glm::vec3 RayScene::recursiveLight(ray cur_ray, intsct cur_intsct, int num_left){
+glm::vec3 RayScene::recursiveLight(ray &cur_ray, intsct cur_intsct, int num_left){
     if (cur_intsct.t == INFINITY)
         return glm::vec3(0.f);
     glm::vec3 normal = glm::normalize(normalAt(cur_ray.p + cur_intsct.t*cur_ray.d, cur_intsct.i));
@@ -615,7 +626,7 @@ glm::vec3 RayScene::recursiveLight(ray cur_ray, intsct cur_intsct, int num_left)
         glm::vec3 inVector = cur_ray.d.xyz();
         glm::vec4 nextd = glm::vec4(inVector - 2.f*glm::dot(inVector, normal)*normal, 0.f);
         ray next_ray = ray(cur_ray.p + cur_intsct.t*cur_ray.d + 0.001f*nextd, nextd);
-        intsct next_intsct = intersect(next_ray);
+        intsct next_intsct = (this->*m_intersectfunction)(next_ray);
         glm::vec3 addColor = recursiveLight(next_ray, next_intsct, num_left - 1);
         nextColor[0] += addColor[0] * m_materials[cur_intsct.i]->cReflective.r;
         nextColor[1] += addColor[1] * m_materials[cur_intsct.i]->cReflective.g;
@@ -624,9 +635,107 @@ glm::vec3 RayScene::recursiveLight(ray cur_ray, intsct cur_intsct, int num_left)
     }
 }
 
+intsct RayScene::intersectBox(ray &one_ray, AABA box){
+    float t = INFINITY;
+    float t_tmp = t;
+    if (one_ray.d.y != 0){
+        t_tmp = (box.y_min-one_ray.p.y)/one_ray.d.y;
+        if (t_tmp < t & t_tmp >= 0 &
+                t_tmp*one_ray.d.x + one_ray.p.x <= box.x_max + 0.000015f &
+                t_tmp*one_ray.d.x + one_ray.p.x >= box.x_min - 0.000015f &
+                t_tmp*one_ray.d.z + one_ray.p.z <= box.z_max + 0.000015f &
+                t_tmp*one_ray.d.z + one_ray.p.z >= box.z_min - 0.000015f)
+            t = t_tmp;
+        t_tmp = (box.y_max - one_ray.p.y)/one_ray.d.y;
+        if (t_tmp < t & t_tmp >= 0 &
+                t_tmp*one_ray.d.x + one_ray.p.x <= box.x_max + 0.000015f &
+                t_tmp*one_ray.d.x + one_ray.p.x >= box.x_min - 0.000015f &
+                t_tmp*one_ray.d.z + one_ray.p.z <= box.z_max + 0.000015f &
+                t_tmp*one_ray.d.z + one_ray.p.z >= box.z_min - 0.000015f)
+            t = t_tmp;
+    }
+    if (one_ray.d.z != 0){
+        t_tmp = (box.z_min-one_ray.p.z)/one_ray.d.z;
+        if (t_tmp < t & t_tmp >= 0 &
+                t_tmp*one_ray.d.y + one_ray.p.y <= box.y_max + 0.000015f &
+                t_tmp*one_ray.d.y + one_ray.p.y >= box.y_min - 0.000015f &
+                t_tmp*one_ray.d.x + one_ray.p.x <= box.x_max + 0.000015f &
+                t_tmp*one_ray.d.x + one_ray.p.x >= box.x_min - 0.000015f)
+            t = t_tmp;
+        t_tmp = (box.z_max - one_ray.p.z)/one_ray.d.z;
+        if (t_tmp < t & t_tmp >= 0 &
+                t_tmp*one_ray.d.y + one_ray.p.y <= box.y_max + 0.000015f &
+                t_tmp*one_ray.d.y + one_ray.p.y >= box.y_min - 0.000015f &
+                t_tmp*one_ray.d.x + one_ray.p.x <= box.x_max + 0.000015f &
+                t_tmp*one_ray.d.x + one_ray.p.x >= box.x_min - 0.000015f)
+            t = t_tmp;
+    }
+    if (one_ray.d.x != 0){
+        t_tmp = (box.x_min-one_ray.p.x)/one_ray.d.x;
+        if (t_tmp < t & t_tmp >= 0 &
+                t_tmp*one_ray.d.z + one_ray.p.z <= box.z_max + 0.000015f &
+                t_tmp*one_ray.d.z + one_ray.p.z >= box.z_min - 0.000015f &
+                t_tmp*one_ray.d.z + one_ray.p.y <= box.y_max + 0.000015f &
+                t_tmp*one_ray.d.z + one_ray.p.y >= box.y_min - 0.000015f)
+            t = t_tmp;
+        t_tmp = (box.x_max - one_ray.p.x)/one_ray.d.x;
+        if (t_tmp < t & t_tmp >= 0 &
+                t_tmp*one_ray.d.z + one_ray.p.z <= box.z_max + 0.000015f &
+                t_tmp*one_ray.d.z + one_ray.p.z >= box.z_min - 0.000015f &
+                t_tmp*one_ray.d.y + one_ray.p.y <= box.y_max + 0.000015f &
+                t_tmp*one_ray.d.y + one_ray.p.y >= box.y_min - 0.000015f)
+            t = t_tmp;
+    }
+    return intsct(t, -1, 0, 0);
+}
+
+intsct RayScene::traverseKDTree(ray &one_ray, KDNode *cur_node, intsct cur_intsct){
+    intsct tmp;
+    KDNode *tmp_node;
+    if (cur_node->is_leaf){
+        for (int i = 0; i < cur_node->numBox; i++){
+            if (cur_node->boxes[i]->visited)
+                continue;
+            tmp = intersectAt(one_ray, cur_node->boxes[i]->prim_index);
+            if (tmp.t != INFINITY)
+                cur_node->boxes[i]->visited = true;
+            if (tmp.t < cur_intsct.t)
+                cur_intsct = tmp;
+        }
+        return cur_intsct;
+    }
+    intsct intsct_1 = intersectBox(one_ray, *cur_node->child_1);
+    intsct intsct_2 = intersectBox(one_ray, *cur_node->child_2);
+    if (intsct_2.t < intsct_1.t){
+        tmp = intsct_2;
+        intsct_2 = intsct_1;
+        intsct_1 = tmp;
+        tmp_node = cur_node->child_2;
+        cur_node->child_2 = cur_node->child_1;
+        cur_node->child_1 = tmp_node;
+    }
+    if (cur_intsct.t < intsct_1.t)
+        return cur_intsct;
+    cur_intsct = traverseKDTree(one_ray, cur_node->child_1, cur_intsct);
+    if (cur_intsct.t < intsct_2.t)
+        return cur_intsct;
+    return traverseKDTree(one_ray, cur_node->child_2, cur_intsct);
+}
+
+intsct RayScene::intersectKDTree(ray &one_ray){
+    for (int i = 0; i < m_numPrims; i++)
+        m_boxes[i].visited = false;
+    return traverseKDTree(one_ray, m_root, intsct());
+}
+
 void RayScene::draw(Canvas2D *canvas, Camera *camera, raySetting ray_setting){
-    constructKDTree();
-/*
+
+    if (ray_setting.useKDTree){
+        constructKDTree();
+        m_intersectfunction = &RayScene::intersectKDTree;
+    }
+    else m_intersectfunction = &RayScene::intersect;
+
     setCanvas(canvas);
     setCamera(camera);
     m_raySetting = ray_setting;
@@ -637,14 +746,22 @@ void RayScene::draw(Canvas2D *canvas, Camera *camera, raySetting ray_setting){
     glm::vec3 tmp_color = glm::vec3(0.f);
     intsct tmp_intsct;
     ray tmp_ray;
+    auto start = std::chrono::steady_clock::now();
+    if (a){
     for (int y = 0; y < m_height; y++){
         for (int x = 0; x < m_width; x++){
             tmp_ray = createRay(x, y);
-            tmp_intsct = intersect(tmp_ray);
+            tmp_intsct = (this->*m_intersectfunction)(tmp_ray);
             tmp_color = recursiveLight(tmp_ray, tmp_intsct, m_raySetting.reflectionDepth);
             *tmp_data = RGBA(REAL2byte(tmp_color.x), REAL2byte(tmp_color.y), REAL2byte(tmp_color.z), 255);
             tmp_data++;
+            //printf("%d, %d\n", x, y);
         }
+        //std::cout << y << " finished\n";
     }
-    m_canvas->update();*/
+    m_canvas->update();
+    auto end = std::chrono::steady_clock::now();
+    std::cout << "Rendering time: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+              << " milliseconds" << std::endl;}
 }

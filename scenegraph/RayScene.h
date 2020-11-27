@@ -25,9 +25,9 @@ struct intsct{
 
 struct AABA{
     AABA(): x_min(INFINITY), x_max(-INFINITY), y_min(INFINITY), y_max(-INFINITY), z_min(INFINITY), z_max(-INFINITY),
-    prim_index(-1){}
+    prim_index(-1), visited(false) {}
     AABA(float a, float b, float c, float d, float e, float f, int i): x_min(a), x_max(b), y_min(c), y_max(d), z_min(e), z_max(f),
-    prim_index(i) {}
+    prim_index(i), visited(false) {}
     float x_min;
     float x_max;
     float y_min;
@@ -35,6 +35,7 @@ struct AABA{
     float z_min;
     float z_max;
     int prim_index;
+    bool visited;
 };
 
 enum DivideAxis {X, Y, Z};
@@ -78,23 +79,26 @@ protected:
     void setCanvas(Canvas2D *canvas);
     void setCamera(Camera *camera);
     ray createRay(int x, int y);
-    intsct intersectCone(ray one_ray);
-    intsct intersectCube(ray one_ray);
-    intsct intersectCylinder(ray one_ray);
-    intsct intersectSphere(ray one_ray);
-    intsct intersectAt(ray one_ray, int i);
+    intsct intersectCone(ray &one_ray);
+    intsct intersectCube(ray &one_ray);
+    intsct intersectCylinder(ray &one_ray);
+    intsct intersectSphere(ray &one_ray);
+    intsct intersectAt(ray &one_ray, int i);
     glm::vec3 normalCone(glm::vec4 p);
     glm::vec3 normalCube(glm::vec4 p);
     glm::vec3 normalCylinder(glm::vec4 p);
     glm::vec3 normalSphere(glm::vec4 p);
     glm::vec3 normalAt(glm::vec4 p, int i);
     glm::vec3 lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u = 0.5f, float v = 0.5f);
-    intsct intersect(ray one_ray);
-    glm::vec3 recursiveLight(ray cur_ray, intsct cur_intsct, int num_left);
+    intsct intersect(ray &one_ray);
+    glm::vec3 recursiveLight(ray &cur_ray, intsct cur_intsct, int num_left);
     AABA computeAABA(glm::mat4x4 &inverse);
     void constructKDTree();
     void recurKDTree(KDNode *node);
     void deleteNode(KDNode *node);
+    intsct intersectKDTree(ray &one_ray);
+    intsct intersectBox(ray &one_ray, AABA box);
+    intsct traverseKDTree(ray &one_ray, KDNode *cur_node, intsct cur_intsct);
 
     Canvas2D *m_canvas;
     Camera *m_camera;
@@ -109,6 +113,7 @@ protected:
     raySetting m_raySetting;
     KDNode *m_root;
     std::vector<AABA> m_boxes;
+    intsct (RayScene::*m_intersectfunction)(ray&);
 };
 
 #endif // RAYSCENE_H

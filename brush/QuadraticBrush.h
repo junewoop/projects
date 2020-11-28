@@ -17,8 +17,8 @@ public:
     QuadraticBrush(RGBA color, int radius);
     virtual ~QuadraticBrush();
 
-    virtual void brushDown(int x, int y, Canvas2D *canvas) {}
-    virtual void brushUp(int x, int y, Canvas2D *canvas) {}
+    virtual void brushDown(int x, int y, Canvas2D *canvas) override {}
+    virtual void brushUp(int x, int y, Canvas2D *canvas) override {}
 
 protected:
     void makeMask() override; // Constructs the mask for this brush.

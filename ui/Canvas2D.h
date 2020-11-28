@@ -10,6 +10,11 @@ class RayScene;
 
 class Camera;
 
+inline unsigned char REAL2byte(float f) {
+    int i = static_cast<int>((f * 255.0 + 0.5));
+    return (i < 0) ? 0 : (i > 255) ? 255 : i;
+}
+
 struct raySetting{
     raySetting() : useShadows(false), useTextureMapping(false), useReflection(false),
         reflectionDepth(0), useMultiThreading(false), usePointLights(false),

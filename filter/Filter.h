@@ -20,11 +20,6 @@ class Canvas2D;
  * It declares the abstract method apply, which is called by Canvas2D to apply the filter.
  */
 
-inline unsigned char REAL2byte(float f) {
-    int i = static_cast<int>((f * 255.0 + 0.5));
-    return (i < 0) ? 0 : (i > 255) ? 255 : i;
-}
-
 inline int shiftIndex(int ind, int offset, int width, AxisType axis){
     switch(axis){
     case X_Axis:

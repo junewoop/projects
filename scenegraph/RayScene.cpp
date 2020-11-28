@@ -7,23 +7,6 @@
 
 static int a = 1;
 
-inline unsigned char REAL2byte(float f) {
-    int i = static_cast<int>((f * 255.0 + 0.5));
-    return (i < 0) ? 0 : (i > 255) ? 255 : i;
-}
-
-inline bool compareX(AABA *b_1, AABA *b_2){
-    return b_1->x_min < b_2->x_min;
-}
-
-inline bool compareY(AABA *b_1, AABA *b_2){
-    return b_1->y_min < b_2->y_min;
-}
-
-inline bool compareZ(AABA *b_1, AABA *b_2){
-    return b_1->z_min < b_2->z_min;
-}
-
 RayScene::RayScene(Scene &scene) :
     Scene(scene),
     m_canvas(nullptr),
@@ -66,189 +49,6 @@ RayScene::~RayScene()
     if (m_root) deleteNode(m_root);
 }
 
-
-void RayScene::deleteNode(KDNode *node){
-    if (!node->is_leaf){
-        deleteNode(node->child_1);
-        deleteNode(node->child_2);
-    }
-    delete[] node->boxes;
-    delete node;
-}
-
-AABA RayScene::computeAABA(glm::mat4x4 &inverse){
-    AABA b = AABA();
-    glm::vec4 p = glm::vec4();
-    for (int i = 0; i < 6; i ++){
-        p = inverse * CHARPOINTS[i];
-        if(p.x < b.x_min) b.x_min = p.x;
-        if(p.x > b.x_max) b.x_max = p.x;
-        if(p.y < b.y_min) b.y_min = p.y;
-        if(p.y > b.y_max) b.y_max = p.y;
-        if(p.z < b.z_min) b.z_min = p.z;
-        if(p.z > b.z_max) b.z_max = p.z;
-    }
-    return b;
-}
-
-void RayScene::constructKDTree(){
-    auto start = std::chrono::steady_clock::now();
-    float X_MIN = INFINITY;
-    float Y_MIN = INFINITY;
-    float Z_MIN = INFINITY;
-    float X_MAX = -INFINITY;
-    float Y_MAX = -INFINITY;
-    float Z_MAX = -INFINITY;
-    for (int i = 0; i < m_numPrims; i++){
-        AABA tmp_box = computeAABA(*m_inverseTransformations[i]);
-        tmp_box.prim_index = i;
-        m_boxes.push_back(tmp_box);
-        X_MIN = std::min(X_MIN, m_boxes[i].x_min);
-        Y_MIN = std::min(Y_MIN, m_boxes[i].y_min);
-        Z_MIN = std::min(Z_MIN, m_boxes[i].z_min);
-        X_MAX = std::max(X_MAX, m_boxes[i].x_max);
-        Y_MAX = std::max(Y_MAX, m_boxes[i].y_max);
-        Z_MAX = std::max(Z_MAX, m_boxes[i].z_max);
-    }
-    m_root = new KDNode(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX);
-    m_root->boxes = new AABA*[m_numPrims];
-    for (int i = 0; i < m_numPrims; i++)
-        m_root->boxes[i] = &m_boxes[i];
-    m_root->numBox = m_numPrims;
-    recurKDTree(m_root);
-    auto end = std::chrono::steady_clock::now();
-    std::cout << "KDTree construction time: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
-              << " milliseconds" << std::endl;
-    std::cout << "num nodes: " << m_numPrims << std::endl;
-}
-void RayScene::recurKDTree(KDNode *node){
-    // std::cout << "numBox: " << node->numBox << std::endl;
-    if ((node->numBox <= 5) || (node->trial == 3)){
-        node->is_leaf = true;
-        for (int i = 0; i < node->numBox; i++){
-            std::cout << node->boxes[i]->prim_index << " ";
-        }
-        std::cout<< std::endl;
-        return;
-    }
-    float c_tmp = 0.f, c_best = INFINITY;
-    int i_best = -1;
-    int j_1 = 0, j_2 = 0;
-    AABA** left = new AABA*[node->numBox];
-    AABA** right = new AABA*[node->numBox];
-    switch (node->axis) {
-    case X: {
-        std::sort(node->boxes, node->boxes + node->numBox, compareX);
-        for (int i = 0; i < node->numBox; i++){
-            c_tmp = i*(node->boxes[i]->x_min - node->x_min) + (node->numBox-i)*(node->x_max - node->boxes[i]->x_min);
-            if (c_tmp < c_best){
-                c_best = c_tmp;
-                i_best = i;
-            }
-        }
-        node->boundary = node->boxes[i_best]->x_min;
-        for (int i = 0; i < node->numBox; i++){
-            if (node->boxes[i]->x_max < node->boundary)
-                left[j_1++] = node->boxes[i];
-            if (node->boxes[i]->x_max > node->boundary)
-                right[j_2++] = node->boxes[i];
-        }
-        if ((j_1 == 0) || (j_2 == 0) || (j_1 == node->numBox) || (j_2 == node->numBox)){
-            delete[] left;
-            delete[] right;
-            node->axis = Y;
-            node->trial++;
-            recurKDTree(node);
-            return;
-        }
-        node->child_1 = new KDNode(node->x_min, node->boundary, node->y_min, node->y_max, node->z_min, node->z_max);
-        node->child_2 = new KDNode(node->boundary, node->x_max, node->y_min, node->y_max, node->z_min, node->z_max);
-        node->child_1->axis = Y;
-        node->child_2->axis = Y;
-        node->child_1->boxes = left;
-        node->child_2->boxes = right;
-        node->child_1->numBox = j_1;
-        node->child_2->numBox = j_2;
-        recurKDTree(node->child_1);
-        recurKDTree(node->child_2);
-        return;
-    }
-    case Y: {
-        std::sort(node->boxes, node->boxes + node->numBox, compareY);
-        for (int i = 0; i < node->numBox; i++){
-            c_tmp = i*(node->boxes[i]->y_min - node->y_min) + (node->numBox-i)*(node->y_max - node->boxes[i]->y_min);
-            if (c_tmp < c_best){
-                c_best = c_tmp;
-                i_best = i;
-            }
-        }
-        node->boundary = node->boxes[i_best]->y_min;
-        for (int i = 0; i < node->numBox; i++){
-            if (node->boxes[i]->y_min < node->boundary)
-                left[j_1++] = node->boxes[i];
-            if (node->boxes[i]->y_max > node->boundary)
-                right[j_2++] = node->boxes[i];
-        }
-        if ((j_1 == 0) || (j_2 == 0) || (j_1 == node->numBox) || (j_2 == node->numBox)){
-            delete[] left;
-            delete[] right;
-            node->axis = Z;
-            node->trial++;
-            recurKDTree(node);
-            return;
-        }
-        node->child_1 = new KDNode(node->x_min, node->x_max, node->y_min, node->boundary, node->z_min, node->z_max);
-        node->child_2 = new KDNode(node->x_min, node->x_max, node->boundary, node->y_max, node->z_min, node->z_max);
-        node->child_1->axis = Z;
-        node->child_2->axis = Z;
-        node->child_1->boxes = left;
-        node->child_2->boxes = right;
-        node->child_1->numBox = j_1;
-        node->child_2->numBox = j_2;
-        recurKDTree(node->child_1);
-        recurKDTree(node->child_2);
-        return;
-    }
-    case Z: {
-        std::sort(node->boxes, node->boxes + node->numBox, compareZ);
-        for (int i = 0; i < node->numBox; i++){
-            c_tmp = i*(node->boxes[i]->z_min - node->z_min) + (node->numBox-i)*(node->z_max - node->boxes[i]->z_min);
-            if (c_tmp < c_best){
-                c_best = c_tmp;
-                i_best = i;
-            }
-        }
-        node->boundary = node->boxes[i_best]->z_min;
-        for (int i = 0; i < node->numBox; i++){
-            if (node->boxes[i]->z_min < node->boundary)
-                left[j_1++] = node->boxes[i];
-            if (node->boxes[i]->z_max > node->boundary)
-                right[j_2++] = node->boxes[i];
-        }
-        if ((j_1 == 0) || (j_2 == 0) || (j_1 == node->numBox) || (j_2 == node->numBox)){
-            delete[] left;
-            delete[] right;
-            node->axis = X;
-            node->trial++;
-            recurKDTree(node);
-            return;
-        }
-        node->child_1 = new KDNode(node->x_min, node->x_max, node->y_min, node->y_max, node->z_min, node->boundary);
-        node->child_2 = new KDNode(node->x_min, node->x_max, node->y_min, node->y_max, node->boundary, node->z_max);
-        node->child_1->axis = X;
-        node->child_2->axis = X;
-        node->child_1->boxes = left;
-        node->child_2->boxes = right;
-        node->child_1->numBox = j_1;
-        node->child_2->numBox = j_2;
-        recurKDTree(node->child_1);
-        recurKDTree(node->child_2);
-        return;
-    }
-    }
-}
-
 void RayScene::setCanvas(Canvas2D *canvas){
     m_canvas = canvas;
     m_width = canvas->width();
@@ -277,7 +77,7 @@ intsct RayScene::intersectCone(ray &one_ray){
     float t_tmp = t;
     if (fabs(one_ray.d.y) >= 0.000015){
         t_tmp = -(0.5+one_ray.p.y)/one_ray.d.y;
-        if (t_tmp >= 0 & pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015){
+        if (t_tmp >= 0 && pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015){
             t = t_tmp;
             v = one_ray.p.z +t_tmp*one_ray.d.z + 0.5f;
             u = one_ray.p.x + t_tmp*one_ray.d.x + 0.5f;
@@ -286,9 +86,9 @@ intsct RayScene::intersectCone(ray &one_ray){
     float a = pow(one_ray.d.x, 2) + pow(one_ray.d.z, 2) - 0.25*pow(one_ray.d.y, 2);
     float b = one_ray.d.x * one_ray.p.x + one_ray.d.z * one_ray.p.z - 0.25 * one_ray.d.y*one_ray.p.y + 0.125 * one_ray.d.y;
     float c = pow(one_ray.p.x, 2) + pow(one_ray.p.z, 2) - 0.25 * pow(one_ray.p.y, 2) + 0.25 * one_ray.p.y - 0.0625;
-    if (fabs(a) >= 0.000015 & b*b-a*c > 0){
+    if (fabs(a) >= 0.000015 && b*b-a*c > 0){
         t_tmp = (-b-sqrt(b*b-a*c))/a;
-        if (t_tmp >= 0 & fabs(one_ray.p.y + t_tmp*one_ray.d.y) <= 0.500015){
+        if (t_tmp >= 0 && fabs(one_ray.p.y + t_tmp*one_ray.d.y) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
                 u = -atan2(one_ray.p.z + t*one_ray.d.z, one_ray.p.x + t*one_ray.d.x)/(2*M_PI);
@@ -296,7 +96,7 @@ intsct RayScene::intersectCone(ray &one_ray){
             }
         }
         t_tmp = (-b+sqrt(b*b-a*c))/a;
-        if (t_tmp >= 0 & fabs(one_ray.p.y + t_tmp*one_ray.d.y) <= 0.500015){
+        if (t_tmp >= 0 && fabs(one_ray.p.y + t_tmp*one_ray.d.y) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
                 u = 1.f - atan2(one_ray.p.z + t*one_ray.d.z, one_ray.p.x + t*one_ray.d.x)/(2*M_PI);
@@ -313,7 +113,7 @@ intsct RayScene::intersectCube(ray &one_ray){
     float u = 0.f, v = 0.f;
     if (one_ray.d.y != 0){
         t_tmp = -(0.5+one_ray.p.y)/one_ray.d.y;
-        if (t_tmp >= 0 & fabs(t_tmp*one_ray.d.x + one_ray.p.x) <= 0.500015 & fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015){
+        if (t_tmp >= 0 && fabs(t_tmp*one_ray.d.x + one_ray.p.x) <= 0.500015 && fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
                 v = one_ray.p.z + t_tmp*one_ray.d.z + 0.5f;
@@ -321,7 +121,7 @@ intsct RayScene::intersectCube(ray &one_ray){
             }
         }
         t_tmp = (0.5 - one_ray.p.y)/one_ray.d.y;
-        if (t_tmp >= 0 & fabs(t_tmp*one_ray.d.x + one_ray.p.x) <= 0.500015 & fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015){
+        if (t_tmp >= 0 && fabs(t_tmp*one_ray.d.x + one_ray.p.x) <= 0.500015 && fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
                 v = 0.5f - one_ray.p.z - t_tmp*one_ray.d.z;
@@ -331,7 +131,7 @@ intsct RayScene::intersectCube(ray &one_ray){
     }
     if (one_ray.d.x != 0){
         t_tmp = -(0.5+one_ray.p.x)/one_ray.d.x;
-        if (t_tmp >= 0 & fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015 & fabs(t_tmp*one_ray.d.y + one_ray.p.y) <= 0.500015){
+        if (t_tmp >= 0 && fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015 && fabs(t_tmp*one_ray.d.y + one_ray.p.y) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
                 v = 0.5f + one_ray.p.y + t_tmp*one_ray.d.y;
@@ -339,7 +139,7 @@ intsct RayScene::intersectCube(ray &one_ray){
             }
         }
         t_tmp = (0.5 - one_ray.p.x)/one_ray.d.x;
-        if (t_tmp >= 0 & fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015 & fabs(t_tmp*one_ray.d.y + one_ray.p.y) <= 0.500015){
+        if (t_tmp >= 0 && fabs(t_tmp*one_ray.d.z + one_ray.p.z) <= 0.500015 && fabs(t_tmp*one_ray.d.y + one_ray.p.y) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
                 v = 0.5f + one_ray.p.y + t_tmp*one_ray.d.y;
@@ -349,7 +149,7 @@ intsct RayScene::intersectCube(ray &one_ray){
     }
     if (one_ray.d.z != 0){
         t_tmp = -(0.5+one_ray.p.z)/one_ray.d.z;
-        if (t_tmp >= 0 & fabs(t_tmp*one_ray.d.y + one_ray.p.y) <= 0.500015 & fabs(t_tmp*one_ray.d.x + one_ray.p.x) <= 0.500015){
+        if (t_tmp >= 0 && fabs(t_tmp*one_ray.d.y + one_ray.p.y) <= 0.500015 && fabs(t_tmp*one_ray.d.x + one_ray.p.x) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
                 u = 0.5f - one_ray.p.x - t_tmp*one_ray.d.x;
@@ -357,7 +157,7 @@ intsct RayScene::intersectCube(ray &one_ray){
             }
         }
         t_tmp = (0.5 - one_ray.p.z)/one_ray.d.z;
-        if (t_tmp >= 0 & fabs(t_tmp*one_ray.d.y + one_ray.p.y) <= 0.500015 & fabs(t_tmp*one_ray.d.x + one_ray.p.x) <= 0.500015){
+        if (t_tmp >= 0 && fabs(t_tmp*one_ray.d.y + one_ray.p.y) <= 0.500015 && fabs(t_tmp*one_ray.d.x + one_ray.p.x) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
                 u = 0.5f + one_ray.p.x + t_tmp*one_ray.d.x;
@@ -374,7 +174,7 @@ intsct RayScene::intersectCylinder(ray &one_ray){
     float u = 0.f, v = 0.f;
     if (one_ray.d.y != 0){
         t_tmp = -(0.5+one_ray.p.y)/one_ray.d.y;
-        if (t_tmp >= 0 & pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015){
+        if (t_tmp >= 0 && pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015){
             if (t_tmp < t){
                 t = t_tmp;
                 v = 0.5 + one_ray.p.z + t_tmp*one_ray.d.z;
@@ -382,7 +182,7 @@ intsct RayScene::intersectCylinder(ray &one_ray){
             }
         }
         t_tmp = (0.5-one_ray.p.y)/one_ray.d.y;
-        if (t_tmp >= 0 & pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015){
+        if (t_tmp >= 0 && pow(one_ray.p.x + t_tmp*one_ray.d.x, 2)+ pow(one_ray.p.z + t_tmp*one_ray.d.z, 2) <= 0.250015){
             if (t_tmp < t){
                 t = t_tmp;
                 v = 0.5 - one_ray.p.z - t_tmp*one_ray.d.z;
@@ -393,9 +193,9 @@ intsct RayScene::intersectCylinder(ray &one_ray){
     float a = one_ray.d.x*one_ray.d.x + one_ray.d.z*one_ray.d.z;
     float b = one_ray.d.x*one_ray.p.x + one_ray.d.z*one_ray.p.z;
     float c = one_ray.p.x*one_ray.p.x + one_ray.p.z*one_ray.p.z - 0.25f;
-    if (a > 0 & b*b - a*c > 0){
+    if (a > 0 && b*b - a*c > 0){
         t_tmp = (-b-sqrt(b*b-a*c))/a;
-        if (t_tmp >= 0 & fabs(one_ray.p.y + t_tmp*one_ray.d.y) <= 0.500015){
+        if (t_tmp >= 0 && fabs(one_ray.p.y + t_tmp*one_ray.d.y) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
                 u = 1.f - atan2(one_ray.p.z + t*one_ray.d.z, one_ray.p.x + t*one_ray.d.x)/(2*M_PI);
@@ -403,7 +203,7 @@ intsct RayScene::intersectCylinder(ray &one_ray){
             }
         }
         t_tmp = (-b+sqrt(b*b-a*c))/a;
-        if (t_tmp >= 0 & fabs(one_ray.p.y + t_tmp*one_ray.d.y) <= 0.500015){
+        if (t_tmp >= 0 && fabs(one_ray.p.y + t_tmp*one_ray.d.y) <= 0.500015){
             if (t_tmp < t){
                 t = t_tmp;
                 u = 1.f - atan2(one_ray.p.z + t*one_ray.d.z, one_ray.p.x + t*one_ray.d.x)/(2*M_PI);
@@ -542,7 +342,7 @@ glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, fl
     glm::vec4 d_toLight = glm::vec4();
     for (int j = 0; j < m_numLights; j++){
         d = glm::length(m_lightData[j]->pos.xyz()- p.xyz());
-        if ((m_lightData[j]->type == LightType::LIGHT_POINT) & m_raySetting.usePointLights){
+        if ((m_lightData[j]->type == LightType::LIGHT_POINT) && m_raySetting.usePointLights){
             lightVector = glm::normalize(m_lightData[j]->pos.xyz()-p.xyz());
             d_toLight = glm::vec4(lightVector, 0.f);
             tmp_ray = ray(p + 0.001f*d_toLight, d_toLight);
@@ -551,7 +351,7 @@ glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, fl
                 add_r = dotProduct*dcolor[0];
                 add_g = dotProduct*dcolor[1];
                 add_b = dotProduct*dcolor[2];
-                if (m_materials[i]->textureMap.isUsed & m_raySetting.useTextureMapping){
+                if (m_materials[i]->textureMap.isUsed && m_raySetting.useTextureMapping){
                     texImage = *m_textureImages[i];
                     s = static_cast<int>(u*m_materials[i]->textureMap.repeatU*texImage.width()) % texImage.width();
                     t = static_cast<int>((1-v)*m_materials[i]->textureMap.repeatV*texImage.height()) % texImage.height();
@@ -571,7 +371,7 @@ glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, fl
                 color[2] += f_att*m_lightData[j]->color[2]*add_b;
             }
         }
-        if ((m_lightData[j]->type == LightType::LIGHT_DIRECTIONAL) & m_raySetting.useDirectionalLights){
+        if ((m_lightData[j]->type == LightType::LIGHT_DIRECTIONAL) && m_raySetting.useDirectionalLights){
             lightVector = glm::normalize(-m_lightData[j]->dir.xyz());
             d_toLight = glm::vec4(lightVector, 0.f);
             tmp_ray = ray(p + 0.1f*d_toLight, d_toLight);
@@ -580,7 +380,7 @@ glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, fl
                 add_r = dotProduct*dcolor[0];
                 add_g = dotProduct*dcolor[1];
                 add_b = dotProduct*dcolor[2];
-                if (m_materials[i]->textureMap.isUsed & m_raySetting.useTextureMapping){
+                if (m_materials[i]->textureMap.isUsed && m_raySetting.useTextureMapping){
                     texImage = *m_textureImages[i];
                     s = static_cast<int>(u*m_materials[i]->textureMap.repeatU*texImage.width()) % texImage.width();
                     t = static_cast<int>((1-v)*m_materials[i]->textureMap.repeatV*texImage.height()) % texImage.height();
@@ -635,58 +435,46 @@ glm::vec3 RayScene::recursiveLight(ray &cur_ray, intsct cur_intsct, int num_left
     }
 }
 
-intsct RayScene::intersectBox(ray &one_ray, AABA box){
-    float t = INFINITY;
-    float t_tmp = t;
-    if (one_ray.d.y != 0){
-        t_tmp = (box.y_min-one_ray.p.y)/one_ray.d.y;
-        if (t_tmp < t & t_tmp >= 0 &
-                t_tmp*one_ray.d.x + one_ray.p.x <= box.x_max + 0.000015f &
-                t_tmp*one_ray.d.x + one_ray.p.x >= box.x_min - 0.000015f &
-                t_tmp*one_ray.d.z + one_ray.p.z <= box.z_max + 0.000015f &
-                t_tmp*one_ray.d.z + one_ray.p.z >= box.z_min - 0.000015f)
-            t = t_tmp;
-        t_tmp = (box.y_max - one_ray.p.y)/one_ray.d.y;
-        if (t_tmp < t & t_tmp >= 0 &
-                t_tmp*one_ray.d.x + one_ray.p.x <= box.x_max + 0.000015f &
-                t_tmp*one_ray.d.x + one_ray.p.x >= box.x_min - 0.000015f &
-                t_tmp*one_ray.d.z + one_ray.p.z <= box.z_max + 0.000015f &
-                t_tmp*one_ray.d.z + one_ray.p.z >= box.z_min - 0.000015f)
-            t = t_tmp;
+void RayScene::constructKDTree(){
+    auto start = std::chrono::steady_clock::now();
+    float X_MIN = INFINITY;
+    float Y_MIN = INFINITY;
+    float Z_MIN = INFINITY;
+    float X_MAX = -INFINITY;
+    float Y_MAX = -INFINITY;
+    float Z_MAX = -INFINITY;
+    AABB tmp_box = AABB();
+    for (int i = 0; i < m_numPrims; i++){
+        tmp_box = AABB(*m_inverseTransformations[i]);
+        tmp_box.prim_index = i;
+        m_boxes.push_back(tmp_box);
+        X_MIN = std::min(X_MIN, m_boxes[i].x_min);
+        Y_MIN = std::min(Y_MIN, m_boxes[i].y_min);
+        Z_MIN = std::min(Z_MIN, m_boxes[i].z_min);
+        X_MAX = std::max(X_MAX, m_boxes[i].x_max);
+        Y_MAX = std::max(Y_MAX, m_boxes[i].y_max);
+        Z_MAX = std::max(Z_MAX, m_boxes[i].z_max);
     }
-    if (one_ray.d.z != 0){
-        t_tmp = (box.z_min-one_ray.p.z)/one_ray.d.z;
-        if (t_tmp < t & t_tmp >= 0 &
-                t_tmp*one_ray.d.y + one_ray.p.y <= box.y_max + 0.000015f &
-                t_tmp*one_ray.d.y + one_ray.p.y >= box.y_min - 0.000015f &
-                t_tmp*one_ray.d.x + one_ray.p.x <= box.x_max + 0.000015f &
-                t_tmp*one_ray.d.x + one_ray.p.x >= box.x_min - 0.000015f)
-            t = t_tmp;
-        t_tmp = (box.z_max - one_ray.p.z)/one_ray.d.z;
-        if (t_tmp < t & t_tmp >= 0 &
-                t_tmp*one_ray.d.y + one_ray.p.y <= box.y_max + 0.000015f &
-                t_tmp*one_ray.d.y + one_ray.p.y >= box.y_min - 0.000015f &
-                t_tmp*one_ray.d.x + one_ray.p.x <= box.x_max + 0.000015f &
-                t_tmp*one_ray.d.x + one_ray.p.x >= box.x_min - 0.000015f)
-            t = t_tmp;
+    m_root = new KDNode(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX);
+    m_root->boxes = new AABB*[m_numPrims];
+    for (int i = 0; i < m_numPrims; i++)
+        m_root->boxes[i] = &m_boxes[i];
+    m_root->numBox = m_numPrims;
+    recurSplitKDTree(m_root);
+    auto end = std::chrono::steady_clock::now();
+    std::cout << "KDTree construction time: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+              << " milliseconds" << std::endl;
+    std::cout << "num nodes: " << m_numPrims << std::endl;
+}
+
+void RayScene::deleteNode(KDNode *node){
+    if (!node->is_leaf){
+        deleteNode(node->child_1);
+        deleteNode(node->child_2);
     }
-    if (one_ray.d.x != 0){
-        t_tmp = (box.x_min-one_ray.p.x)/one_ray.d.x;
-        if (t_tmp < t & t_tmp >= 0 &
-                t_tmp*one_ray.d.z + one_ray.p.z <= box.z_max + 0.000015f &
-                t_tmp*one_ray.d.z + one_ray.p.z >= box.z_min - 0.000015f &
-                t_tmp*one_ray.d.z + one_ray.p.y <= box.y_max + 0.000015f &
-                t_tmp*one_ray.d.z + one_ray.p.y >= box.y_min - 0.000015f)
-            t = t_tmp;
-        t_tmp = (box.x_max - one_ray.p.x)/one_ray.d.x;
-        if (t_tmp < t & t_tmp >= 0 &
-                t_tmp*one_ray.d.z + one_ray.p.z <= box.z_max + 0.000015f &
-                t_tmp*one_ray.d.z + one_ray.p.z >= box.z_min - 0.000015f &
-                t_tmp*one_ray.d.y + one_ray.p.y <= box.y_max + 0.000015f &
-                t_tmp*one_ray.d.y + one_ray.p.y >= box.y_min - 0.000015f)
-            t = t_tmp;
-    }
-    return intsct(t, -1, 0, 0);
+    delete[] node->boxes;
+    delete node;
 }
 
 intsct RayScene::traverseKDTree(ray &one_ray, KDNode *cur_node, intsct cur_intsct){
@@ -704,8 +492,8 @@ intsct RayScene::traverseKDTree(ray &one_ray, KDNode *cur_node, intsct cur_intsc
         }
         return cur_intsct;
     }
-    intsct intsct_1 = intersectBox(one_ray, *cur_node->child_1);
-    intsct intsct_2 = intersectBox(one_ray, *cur_node->child_2);
+    intsct intsct_1 = (*cur_node->child_1).intersectBox(one_ray);
+    intsct intsct_2 = (*cur_node->child_2).intersectBox(one_ray);
     if (intsct_2.t < intsct_1.t){
         tmp = intsct_2;
         intsct_2 = intsct_1;

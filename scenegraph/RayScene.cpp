@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <tuple>
+#include <stack>
 
 static int a = 1;
 
@@ -67,7 +69,6 @@ ray RayScene::createRay(int x, int y){
     glm::vec4 d = glm::vec4(p_world.xyz()-m_eye.xyz(), 0.f);
     d = glm::normalize(d);
     ray res = {m_eye, d};
-
     return res;
 }
 
@@ -437,25 +438,20 @@ glm::vec3 RayScene::recursiveLight(ray &cur_ray, intsct cur_intsct, int num_left
 
 void RayScene::constructKDTree(){
     auto start = std::chrono::steady_clock::now();
-    float X_MIN = INFINITY;
-    float Y_MIN = INFINITY;
-    float Z_MIN = INFINITY;
-    float X_MAX = -INFINITY;
-    float Y_MAX = -INFINITY;
-    float Z_MAX = -INFINITY;
+    m_root = new KDNode();
     AABB tmp_box = AABB();
     for (int i = 0; i < m_numPrims; i++){
-        tmp_box = AABB(*m_inverseTransformations[i]);
+        tmp_box = AABB(*m_transformations[i]);
         tmp_box.prim_index = i;
+        m_root->x_min = std::min(m_root->x_min, tmp_box.x_min);
+        m_root->y_min = std::min(m_root->y_min, tmp_box.y_min);
+        m_root->z_min = std::min(m_root->y_min, tmp_box.z_min);
+        m_root->x_max = std::max(m_root->x_max, tmp_box.x_max);
+        m_root->y_max = std::max(m_root->y_max, tmp_box.y_max);
+        m_root->z_max = std::max(m_root->z_max, tmp_box.z_max);
         m_boxes.push_back(tmp_box);
-        X_MIN = std::min(X_MIN, m_boxes[i].x_min);
-        Y_MIN = std::min(Y_MIN, m_boxes[i].y_min);
-        Z_MIN = std::min(Z_MIN, m_boxes[i].z_min);
-        X_MAX = std::max(X_MAX, m_boxes[i].x_max);
-        Y_MAX = std::max(Y_MAX, m_boxes[i].y_max);
-        Z_MAX = std::max(Z_MAX, m_boxes[i].z_max);
     }
-    m_root = new KDNode(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX);
+    printf("%f, %f, %f, %f, %f, %f\n", m_root->x_min, m_root->x_max, m_root->y_min, m_root->y_max, m_root->z_min, m_root->z_max);
     m_root->boxes = new AABB*[m_numPrims];
     for (int i = 0; i < m_numPrims; i++)
         m_root->boxes[i] = &m_boxes[i];
@@ -465,7 +461,7 @@ void RayScene::constructKDTree(){
     std::cout << "KDTree construction time: "
               << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
               << " milliseconds" << std::endl;
-    std::cout << "num nodes: " << m_numPrims << std::endl;
+    std::cout << "num prims: " << m_numPrims << std::endl;
 }
 
 void RayScene::deleteNode(KDNode *node){
@@ -492,8 +488,10 @@ intsct RayScene::traverseKDTree(ray &one_ray, KDNode *cur_node, intsct cur_intsc
         }
         return cur_intsct;
     }
-    intsct intsct_1 = (*cur_node->child_1).intersectBox(one_ray);
-    intsct intsct_2 = (*cur_node->child_2).intersectBox(one_ray);
+    intsct intsct_1 = intsct();
+    intsct intsct_2 = intsct();
+    intsct_1.t = (*cur_node->child_1).intersectBox(one_ray).first;
+    intsct_2.t = (*cur_node->child_2).intersectBox(one_ray).first;
     if (intsct_2.t < intsct_1.t){
         tmp = intsct_2;
         intsct_2 = intsct_1;
@@ -513,7 +511,65 @@ intsct RayScene::traverseKDTree(ray &one_ray, KDNode *cur_node, intsct cur_intsc
 intsct RayScene::intersectKDTree(ray &one_ray){
     for (int i = 0; i < m_numPrims; i++)
         m_boxes[i].visited = false;
-    return traverseKDTree(one_ray, m_root, intsct());
+//    return traverseKDTree(one_ray, m_root, intsct());
+    std::pair<float, float> t_global = m_root->intersectBox(one_ray);
+    if (t_global.second == -INFINITY){
+        return intsct();
+    }
+
+    std::stack<std::tuple<KDNode*, float, float>> s;
+    s.push(std::make_tuple(m_root, t_global.first, t_global.second));
+    std::tuple<KDNode*, float, float> tup = std::make_tuple(nullptr, 0.f, 0.f);
+    KDNode *cur_node = nullptr, *near_node = nullptr, *far_node = nullptr;
+    float t_min = 0.f, t_max = 0.f, t = 0.f;
+    intsct cur_intsct = intsct(), tmp_intsct = intsct();
+    bool b = true;
+    while(!s.empty()){
+        tup = s.top();
+        s.pop();
+        cur_node = std::get<0>(tup);
+        t_min = std::get<1>(tup);
+        t_max = std::get<2>(tup);
+        //printf("t_min, t_max: %f, %f\n", t_min, t_max);
+        while(!cur_node->is_leaf){
+            //printf("serching leaf\n");
+            switch (cur_node->axis) {
+            case X:
+                t = (cur_node->boundary - one_ray.p.x)/one_ray.d.x;
+                b = (one_ray.p.x < cur_node->boundary);
+                break;
+            case Y:
+                t = (cur_node->boundary - one_ray.p.y)/one_ray.d.y;
+                b = (one_ray.p.y < cur_node->boundary);
+                break;
+            case Z:
+                t = (cur_node->boundary - one_ray.p.z)/one_ray.d.z;
+                b = (one_ray.p.z < cur_node->boundary);
+                break;
+            }
+            near_node = b ? cur_node->child_1 : cur_node->child_2;
+            far_node = b ? cur_node->child_2 : cur_node->child_1;
+            if (t >= t_max || t < 0) cur_node = near_node;
+            else if (t <= t_min) cur_node = far_node;
+            else{
+                s.push(std::make_tuple(far_node, t, t_max));
+                cur_node = near_node;
+                t_max = t;
+            }
+        }
+        if (cur_node->numBox != 0){
+            for(int i = 0; i < cur_node->numBox; i++){
+                if (cur_node->boxes[i]->visited)
+                    continue;
+                tmp_intsct = intersectAt(one_ray, cur_node->boxes[i]->prim_index);
+                if (tmp_intsct.t != INFINITY) cur_node->boxes[i]->visited = true;
+                if (tmp_intsct.t < cur_intsct.t) cur_intsct = tmp_intsct;
+            }
+        }
+        if (cur_intsct.t >= t_min && cur_intsct.t <= t_max)
+            return cur_intsct;
+    }
+    return cur_intsct;
 }
 
 void RayScene::draw(Canvas2D *canvas, Camera *camera, raySetting ray_setting){

@@ -5,6 +5,7 @@
 #include "Scene.h"
 #include <algorithm>
 #include <iostream>
+#include <utility>
 
 struct ray {
     ray() : p(glm::vec4()), d(glm::vec4()) {}
@@ -23,12 +24,16 @@ struct intsct{
 };
 
 
-static std::vector<glm::vec4> CHARPOINTS{glm::vec4(-0.5f, 0.f, 0.f, 1.f),
-            glm::vec4(0.5f, 0.f, 0.f, 1.f),
-            glm::vec4(0.f, -0.5f, 0.f, 1.f),
-            glm::vec4(0.f, 0.5f, 0.f, 1.f),
-            glm::vec4(0.f, 0.f, -0.5f, 1.f),
-            glm::vec4(0.f, 0.f, 0.5f, 1.f)};
+static std::vector<glm::vec4> CHARPOINTS{
+    glm::vec4(0.6f, 0.6f, 0.6f, 1.f),
+    glm::vec4(0.6f, 0.6f, -0.6f, 1.f),
+    glm::vec4(0.6f, -0.6f, 0.6f, 1.f),
+    glm::vec4(0.6f, -0.6f, -0.6f, 1.f),
+    glm::vec4(-0.6f, 0.6f, 0.6f, 1.f),
+    glm::vec4(-0.6f, 0.6f, -0.6f, 1.f),
+    glm::vec4(-0.6f, -0.6f, 0.6f, 1.f),
+    glm::vec4(-0.6f, -0.6f, -0.6f, 1.f)
+};
 
 struct AABB{
     AABB(): x_min(INFINITY), x_max(-INFINITY), y_min(INFINITY), y_max(-INFINITY), z_min(INFINITY), z_max(-INFINITY),
@@ -37,7 +42,7 @@ struct AABB{
     prim_index(i), visited(false) {}
     AABB(glm::mat4x4 &inverse): AABB(){
         glm::vec4 p = glm::vec4();
-        for (int i = 0; i < 6; i ++){
+        for (int i = 0; i < 8; i ++){
             p = inverse * CHARPOINTS[i];
             if(p.x < x_min) x_min = p.x;
             if(p.x > x_max) x_max = p.x;
@@ -55,58 +60,66 @@ struct AABB{
     float z_max;
     int prim_index;
     bool visited;
-    intsct intersectBox(ray &one_ray){
-        float t = INFINITY;
-        float t_tmp = t;
+    std::pair<float, float> intersectBox(ray &one_ray){
+        float t_min = INFINITY;
+        float t_max = -INFINITY;
+        float t_tmp;
         if (one_ray.d.y != 0){
             t_tmp = (y_min-one_ray.p.y)/one_ray.d.y;
-            if (t_tmp < t & t_tmp >= 0 &
-                    t_tmp*one_ray.d.x + one_ray.p.x <= x_max + 0.000015f &
+            if (t_tmp*one_ray.d.x + one_ray.p.x <= x_max + 0.000015f &
                     t_tmp*one_ray.d.x + one_ray.p.x >= x_min - 0.000015f &
                     t_tmp*one_ray.d.z + one_ray.p.z <= z_max + 0.000015f &
-                    t_tmp*one_ray.d.z + one_ray.p.z >= z_min - 0.000015f)
-                t = t_tmp;
+                    t_tmp*one_ray.d.z + one_ray.p.z >= z_min - 0.000015f){
+                t_min = std::min(t_min, t_tmp);
+                t_max = std::max(t_max, t_tmp);
+            }
             t_tmp = (y_max - one_ray.p.y)/one_ray.d.y;
-            if (t_tmp < t & t_tmp >= 0 &
-                    t_tmp*one_ray.d.x + one_ray.p.x <= x_max + 0.000015f &
+            if (t_tmp*one_ray.d.x + one_ray.p.x <= x_max + 0.000015f &
                     t_tmp*one_ray.d.x + one_ray.p.x >= x_min - 0.000015f &
                     t_tmp*one_ray.d.z + one_ray.p.z <= z_max + 0.000015f &
-                    t_tmp*one_ray.d.z + one_ray.p.z >= z_min - 0.000015f)
-                t = t_tmp;
+                    t_tmp*one_ray.d.z + one_ray.p.z >= z_min - 0.000015f){
+                t_min = std::min(t_min, t_tmp);
+                t_max = std::max(t_max, t_tmp);
+            }
         }
         if (one_ray.d.z != 0){
             t_tmp = (z_min-one_ray.p.z)/one_ray.d.z;
-            if (t_tmp < t & t_tmp >= 0 &
-                    t_tmp*one_ray.d.y + one_ray.p.y <= y_max + 0.000015f &
+            if (t_tmp*one_ray.d.y + one_ray.p.y <= y_max + 0.000015f &
                     t_tmp*one_ray.d.y + one_ray.p.y >= y_min - 0.000015f &
                     t_tmp*one_ray.d.x + one_ray.p.x <= x_max + 0.000015f &
-                    t_tmp*one_ray.d.x + one_ray.p.x >= x_min - 0.000015f)
-                t = t_tmp;
+                    t_tmp*one_ray.d.x + one_ray.p.x >= x_min - 0.000015f){
+                t_min = std::min(t_min, t_tmp);
+                t_max = std::max(t_max, t_tmp);
+            }
             t_tmp = (z_max - one_ray.p.z)/one_ray.d.z;
-            if (t_tmp < t & t_tmp >= 0 &
-                    t_tmp*one_ray.d.y + one_ray.p.y <= y_max + 0.000015f &
+            if (t_tmp*one_ray.d.y + one_ray.p.y <= y_max + 0.000015f &
                     t_tmp*one_ray.d.y + one_ray.p.y >= y_min - 0.000015f &
                     t_tmp*one_ray.d.x + one_ray.p.x <= x_max + 0.000015f &
-                    t_tmp*one_ray.d.x + one_ray.p.x >= x_min - 0.000015f)
-                t = t_tmp;
+                    t_tmp*one_ray.d.x + one_ray.p.x >= x_min - 0.000015f){
+                t_min = std::min(t_min, t_tmp);
+                t_max = std::max(t_max, t_tmp);
+            }
         }
         if (one_ray.d.x != 0){
             t_tmp = (x_min-one_ray.p.x)/one_ray.d.x;
-            if (t_tmp < t & t_tmp >= 0 &
-                    t_tmp*one_ray.d.z + one_ray.p.z <= z_max + 0.000015f &
+            if (t_tmp*one_ray.d.z + one_ray.p.z <= z_max + 0.000015f &
                     t_tmp*one_ray.d.z + one_ray.p.z >= z_min - 0.000015f &
                     t_tmp*one_ray.d.z + one_ray.p.y <= y_max + 0.000015f &
-                    t_tmp*one_ray.d.z + one_ray.p.y >= y_min - 0.000015f)
-                t = t_tmp;
+                    t_tmp*one_ray.d.z + one_ray.p.y >= y_min - 0.000015f){
+                t_min = std::min(t_min, t_tmp);
+                t_max = std::max(t_max, t_tmp);
+            }
             t_tmp = (x_max - one_ray.p.x)/one_ray.d.x;
-            if (t_tmp < t & t_tmp >= 0 &
-                    t_tmp*one_ray.d.z + one_ray.p.z <= z_max + 0.000015f &
+            if (t_tmp*one_ray.d.z + one_ray.p.z <= z_max + 0.000015f &
                     t_tmp*one_ray.d.z + one_ray.p.z >= z_min - 0.000015f &
                     t_tmp*one_ray.d.y + one_ray.p.y <= y_max + 0.000015f &
-                    t_tmp*one_ray.d.y + one_ray.p.y >= y_min - 0.000015f)
-                t = t_tmp;
+                    t_tmp*one_ray.d.y + one_ray.p.y >= y_min - 0.000015f){
+                t_min = std::min(t_min, t_tmp);
+                t_max = std::max(t_max, t_tmp);
+            }
         }
-        return intsct(t, -1, 0, 0);
+        if (t_max < 0) return std::make_pair(INFINITY, -INFINITY);
+        return std::make_pair(t_min, t_max);
     }
 };
 
@@ -142,12 +155,12 @@ struct KDNode : AABB{
 
 static void recurSplitKDTree(KDNode *node){
     // std::cout << "numBox: " << node->numBox << std::endl;
-    for (int i = 0; i < node->numBox; i++){
-        std::cout << node->boxes[i]->prim_index << " ";
-    }
-    std::cout<< std::endl;
     if ((node->numBox <= 5) || (node->trial == 3)){
         node->is_leaf = true;
+        for (int i = 0; i < node->numBox; i++){
+            std::cout << node->boxes[i]->prim_index << " ";
+        }
+        std::cout<< std::endl;
         return;
     }
     float c_tmp = 0.f, c_best = INFINITY;
@@ -179,9 +192,9 @@ static void recurSplitKDTree(KDNode *node){
         }
         node->boundary = node->boxes[i_best]->x_min;
         for (int i = 0; i < node->numBox; i++){
-            if (node->boxes[i]->x_max < node->boundary)
+            if (node->boxes[i]->x_min <= node->boundary)
                 left[j_1++] = node->boxes[i];
-            if (node->boxes[i]->x_max > node->boundary)
+            if (node->boxes[i]->x_max >= node->boundary)
                 right[j_2++] = node->boxes[i];
         }
         if ((j_1 == node->numBox) || (j_2 == node->numBox)){
@@ -225,9 +238,9 @@ static void recurSplitKDTree(KDNode *node){
         }
         node->boundary = node->boxes[i_best]->y_min;
         for (int i = 0; i < node->numBox; i++){
-            if (node->boxes[i]->y_min < node->boundary)
+            if (node->boxes[i]->y_min <= node->boundary)
                 left[j_1++] = node->boxes[i];
-            if (node->boxes[i]->y_max > node->boundary)
+            if (node->boxes[i]->y_max >= node->boundary)
                 right[j_2++] = node->boxes[i];
         }
         if ((j_1 == node->numBox) || (j_2 == node->numBox)){
@@ -271,9 +284,9 @@ static void recurSplitKDTree(KDNode *node){
         }
         node->boundary = node->boxes[i_best]->z_min;
         for (int i = 0; i < node->numBox; i++){
-            if (node->boxes[i]->z_min < node->boundary)
+            if (node->boxes[i]->z_min <= node->boundary)
                 left[j_1++] = node->boxes[i];
-            if (node->boxes[i]->z_max > node->boundary)
+            if (node->boxes[i]->z_max >= node->boundary)
                 right[j_2++] = node->boxes[i];
         }
         if ((j_1 == 0) || (j_2 == 0) || (j_1 == node->numBox) || (j_2 == node->numBox)){

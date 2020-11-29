@@ -55,6 +55,7 @@ protected:
     KDNode *m_root;
     std::vector<AABB> m_boxes;
     intsct (RayScene::*m_intersectfunction)(ray&);
+    int m_numnodes;
 };
 
 #endif // RAYSCENE_H

@@ -137,17 +137,17 @@ enum DivideAxis {X, Y, Z};
 
 struct KDNode : AABB{
     KDNode(): AABB(), is_leaf(false), axis(X), child_1(nullptr), child_2(nullptr),
-        boxes(nullptr), boundary(0.f), numBox(0), trial(0) {}
+        numBox(0), boxes(nullptr), boundary(0.f), trial(0) {}
     KDNode(float a, float b, float c, float d, float e, float f): AABB(a, b, c, d, e, f, -1),
         is_leaf(false), axis(X), child_1(nullptr), child_2(nullptr),
-        boxes(nullptr), boundary(0.f), numBox(0), trial(0) {}
+        numBox(0), boxes(nullptr), boundary(0.f), trial(0) {}
     bool is_leaf;
     DivideAxis axis;
     KDNode *child_1;
     KDNode *child_2;
+    int numBox;
     AABB **boxes;
     float boundary;
-    int numBox;
     int trial;
     void recurSplitKDTree(){
         if ((numBox <= 5) || (trial == 3)){

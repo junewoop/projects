@@ -8,14 +8,14 @@
 
 RayScene::RayScene(Scene &scene) :
     Scene(scene),
+    m_raySetting(),
     m_canvas(nullptr),
-    m_camera(nullptr),
     m_width(0),
     m_height(0),
     m_data(nullptr),
+    m_camera(nullptr),
     m_filmToWorld(glm::mat4x4()),
     m_eye(glm::vec4()),
-    m_raySetting(),
     m_root(nullptr),
     m_intersectfunction(nullptr)
 {
@@ -340,6 +340,7 @@ glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, fl
     glm::vec4 d_toLight = glm::vec4();
     for (int j = 0; j < m_numLights; j++){
         d = glm::length(m_lightData[j]->pos.xyz()- p.xyz());
+        // positional lighting
         if ((m_lightData[j]->type == LightType::LIGHT_POINT) && m_raySetting.usePointLights){
             lightVector = glm::normalize(m_lightData[j]->pos.xyz()-p.xyz());
             d_toLight = glm::vec4(lightVector, 0.f);
@@ -369,6 +370,7 @@ glm::vec3 RayScene::lightingAt(glm::vec4 p, int i, glm::vec3 normal, float u, fl
                 color[2] += f_att*m_lightData[j]->color[2]*add_b;
             }
         }
+        // directional lighting
         if ((m_lightData[j]->type == LightType::LIGHT_DIRECTIONAL) && m_raySetting.useDirectionalLights){
             lightVector = glm::normalize(-m_lightData[j]->dir.xyz());
             d_toLight = glm::vec4(lightVector, 0.f);
@@ -437,7 +439,6 @@ void RayScene::constructKDTree(){
     auto start = std::chrono::steady_clock::now();
     m_root = new KDNode();
     AABB tmp_box = AABB();
-    m_root->axis = X;
     for (int i = 0; i < m_numPrims; i++){
         tmp_box = AABB(*m_transformations[i]);
         tmp_box.prim_index = i;
@@ -449,13 +450,12 @@ void RayScene::constructKDTree(){
         m_root->z_max = std::max(m_root->z_max, tmp_box.z_max);
         m_boxes.push_back(tmp_box);
     }
-    m_root->boxes = new AABB*[m_numPrims];
-    for (int i = 0; i < m_numPrims; i++)
-        m_root->boxes[i] = &m_boxes[i];
     m_root->numBox = m_numPrims;
+    m_root->boxes = new AABB*[m_numPrims];
+    for (int i = 0; i < m_numPrims; i++) m_root->boxes[i] = &m_boxes[i];
     m_root->recurSplitKDTree();
+    // construction time
     auto end = std::chrono::steady_clock::now();
-
     std::cout << "KDTree construction time: "
               << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
               << " milliseconds" << std::endl;
@@ -471,8 +471,7 @@ void RayScene::deleteNode(KDNode *node){
 }
 
 intsct RayScene::intersectKDTree(ray &one_ray){
-    for (int i = 0; i < m_numPrims; i++)
-        m_boxes[i].visited = false;
+    for (int i = 0; i < m_numPrims; i++) m_boxes[i].visited = false;
     std::pair<float, float> t_global = m_root->intersectBox(one_ray);
     if (t_global.second == -INFINITY) return intsct();
 
@@ -489,6 +488,7 @@ intsct RayScene::intersectKDTree(ray &one_ray){
         cur_node = std::get<0>(tup);
         t_min = std::get<1>(tup);
         t_max = std::get<2>(tup);
+        // Traverse until a leaf node is reached
         while(!cur_node->is_leaf){
             switch (cur_node->axis) {
             case X:
@@ -514,6 +514,7 @@ intsct RayScene::intersectKDTree(ray &one_ray){
                 t_max = t;
             }
         }
+        // Loop through primitives inside the found leaf node
         for(int i = 0; i < cur_node->numBox; i++){
             if (cur_node->boxes[i]->visited)
                 continue;
@@ -527,7 +528,15 @@ intsct RayScene::intersectKDTree(ray &one_ray){
     return intsct();
 }
 
+void RayScene::renderPixel(int x, int y){
+    ray one_ray = createRay(x, y);
+    intsct one_intsct = (this->*m_intersectfunction)(one_ray);
+    glm::vec3 color = recursiveLight(one_ray, one_intsct, m_raySetting.reflectionDepth);
+    *(m_data + (y *m_width + x)) = RGBA(REAL2byte(color.x), REAL2byte(color.y), REAL2byte(color.z), 255);
+}
+
 void RayScene::draw(Canvas2D *canvas, Camera *camera, raySetting ray_setting){
+    // initialization
     setCanvas(canvas);
     setCamera(camera);
     m_raySetting = ray_setting;
@@ -539,21 +548,15 @@ void RayScene::draw(Canvas2D *canvas, Camera *camera, raySetting ray_setting){
     if (!m_raySetting.useReflection)
         m_raySetting.reflectionDepth = 0;
     // else m_raySetting.reflectionDepth = <ENTER VALUE HERE>;
-    RGBA *tmp_data = m_data;
-    glm::vec3 tmp_color = glm::vec3(0.f);
-    intsct tmp_intsct;
-    ray tmp_ray;
+
+    // Start rendering
     auto start = std::chrono::steady_clock::now();
-    for (int y = 0; y < m_height; y++){
-        for (int x = 0; x < m_width; x++){
-            tmp_ray = createRay(x, y);
-            tmp_intsct = (this->*m_intersectfunction)(tmp_ray);
-            tmp_color = recursiveLight(tmp_ray, tmp_intsct, m_raySetting.reflectionDepth);
-            *tmp_data = RGBA(REAL2byte(tmp_color.x), REAL2byte(tmp_color.y), REAL2byte(tmp_color.z), 255);
-            tmp_data++;
-        }
-    }
+    for (int y = 0; y < m_height; y++)
+        for (int x = 0; x < m_width; x++)
+            renderPixel(x, y);
     m_canvas->update();
+
+    // Print out rendering time
     auto end = std::chrono::steady_clock::now();
     std::cout << "Rendering time: "
               << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()

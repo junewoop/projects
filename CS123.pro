@@ -93,7 +93,7 @@ HEADERS += \
     filter/FilterEdge.h \
     filter/FilterGray.h \
     filter/FilterScale.h \
-    scenegraph/RayData.h \
+    scenegraph/RayBox.h \
     scenegraph/Scene.h \
     scenegraph/OpenGLScene.h \
     scenegraph/ShapesScene.h \

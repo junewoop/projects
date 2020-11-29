@@ -3,9 +3,7 @@
 
 #include "Canvas2D.h"
 #include "Camera.h"
-#include <algorithm>
-#include <iostream>
-#include "RayData.h"
+#include "RayBox.h"
 
 /**
  * @class RayScene
@@ -38,7 +36,6 @@ protected:
 
     void constructKDTree();
     void deleteNode(KDNode *node);
-    intsct traverseKDTree(ray &one_ray, KDNode *cur_node, intsct cur_intsct);
     intsct intersectKDTree(ray &one_ray);
 
     Canvas2D *m_canvas;
